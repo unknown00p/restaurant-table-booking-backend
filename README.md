@@ -86,8 +86,8 @@ A backend application that allows users to browse restaurants, check table avail
 
 1. **Clone the repo**
    ```bash
-   git clone https://github.com/your-username/restaurant-booking-app.git
-   cd restaurant-booking-app
+   https://github.com/unknown00p/restaurant-table-booking.git
+   cd restaurant-table-booking
    ```
 
 2. **Install dependencies**
@@ -97,8 +97,14 @@ A backend application that allows users to browse restaurants, check table avail
 
 3. **Create `.env` file**
    ```env
-   MONGO_URI=your_mongo_connection_string
-   JWT_SECRET=your_jwt_secret
+   DB_CONNECTION_STRING=""
+   REFRESH_TOKEN_SECRET=""
+   REFRESH_TOKEN_EXPIRY=""
+   ACCESS_TOKEN_SECRET=""
+   ACCESS_TOKEN_EXPIRY=""
+   PORT=""
+   NODEMAILER_EMAIL=""
+   NODEMAILER_PASS=""
    ```
 
 4. **Start the server**
