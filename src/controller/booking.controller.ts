@@ -1,4 +1,5 @@
 import { Booking } from "../model/booking.model";
+import { BookingCancelation } from "../model/bookingCancelation.model";
 import { Table } from "../model/table.model";
 import { TableBooking } from "../model/tableBooking.model";
 import { authorizedUser } from "../types/user.type";
@@ -124,8 +125,12 @@ export const getBookingDetailsById = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, "booking retrived successfully", booking));
 });
 
-export const cancelBooking = asyncHandler(async (req, res) => {
+export const cancelBooking = asyncHandler(async (req: authorizedUser, res) => {
   const { bookingId } = req.params;
+  const { reason } = req.body;
+
+  // commented because middleware is not applied for some purpose
+  // const userId = req.user?._id;
 
   if (!bookingId) {
     throw new ApiError(404, "please provide booking id");
@@ -141,6 +146,8 @@ export const cancelBooking = asyncHandler(async (req, res) => {
     );
   }
 
+  const bookingDetail = await Booking.findById(bookingId)
+
   // second delete booking of matched id
   const deleteBooking = await Booking.findByIdAndDelete(bookingId);
 
@@ -148,7 +155,13 @@ export const cancelBooking = asyncHandler(async (req, res) => {
     throw new ApiError(500, "got error while deleting booking");
   }
 
-  res.status(200).json(new ApiResponse(200, "booking cancled successfully"));
+  const cancelHistory = await BookingCancelation.create({
+    bookingId: bookingId,
+    canceledBy: bookingDetail.userId,
+    reason,
+  });
+
+  res.status(200).json(new ApiResponse(200, "booking cancled successfully",cancelHistory));
 });
 
 export const getBookingOfUser = asyncHandler(
