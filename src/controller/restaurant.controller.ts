@@ -1,4 +1,4 @@
-import { Response, Request } from "express";
+import { Response, Request, RequestHandler } from "express";
 import { asyncHandler } from "../utils/asyncHandler";
 import { ApiError } from "../utils/apiError";
 import { Restaurant } from "../model/restaurant.model";
@@ -168,7 +168,7 @@ export const updateCuisine = asyncHandler(
 //     const previousTableNo = await Restaurant.findById({_id: restaurantId})
 
 //     if (previousTableNo < numberOfTables) {
-      
+
 //     }
 
 //     const updateNumberOfTables = await Restaurant.findByIdAndUpdate(
@@ -243,6 +243,41 @@ export const removeRestaurant = asyncHandler(
           200,
           "deleted restaurant and related tables and bookings successfully"
         )
+      );
+  }
+);
+
+
+type SearchQuery = {
+  name?: string;
+  location?: string;
+  cuisine?: string;
+};
+
+export const SearchRestaurant: RequestHandler = asyncHandler(
+  async (req, res) => {
+    const { name, location, cuisine } = req.query as SearchQuery;
+
+    const query: any = {};
+
+    if (name) {
+      query.name = { $regex: name, $options: "i" };
+    }
+
+    if (location) {
+      query.location = { $regex: location, $options: "i" };
+    }
+
+    if (cuisine) {
+      query.cuisine = { $regex: cuisine, $options: "i" };
+    }
+
+    const restaurants = await Restaurant.find(query);
+
+    res
+      .status(200)
+      .json(
+        new ApiResponse(200, "Restaurants fetched successfully", restaurants)
       );
   }
 );
