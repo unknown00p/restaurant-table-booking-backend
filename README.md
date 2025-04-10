@@ -1,6 +1,6 @@
 # 🍽️ Restaurant Table Booking App
 
-A full-stack web application that allows users to browse restaurants, check table availability, and make reservations in real-time. Built with flexibility in mind to support dynamic table assignments, real-time booking conflicts, and user management.
+A backend application that allows users to browse restaurants, check table availability, and make reservations in real-time. Built with flexibility in mind to support dynamic table assignments, real-time booking conflicts, and user management.
 
 ---
 
@@ -17,11 +17,9 @@ A full-stack web application that allows users to browse restaurants, check tabl
 
 ## 🧠 Tech Stack
 
-- **Frontend**: *(Not implemented here, assumed separate)*  
 - **Backend**: Node.js, Express.js
 - **Database**: MongoDB (with Mongoose)
-- **Auth**: JWT, OTP via email
-- **Cloud Storage** *(optional)*: Tebi S3
+- **Auth**: JWT, OTP via email (Using nodemailer)
 
 ---
 
