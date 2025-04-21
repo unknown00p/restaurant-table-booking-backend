@@ -17,9 +17,25 @@ const TableSchema = new mongoose.Schema(
       required: true,
     },
 
-    isDeleted: {
+    status: {
+      type: String,
+      enum: ["active", "inactive"],
+      default: "active",
+    },
+
+    location: {
+      type: String,
+      enum: ["window", "corner", "near door", "center"],
+      required: true,
+    },
+
+    private: {
       type: Boolean,
-      default: false
+      default: false,
+    },
+
+    specialFeatures: {
+      type: [String],
     }
   },
   {

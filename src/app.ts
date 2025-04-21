@@ -2,7 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 const app = express();
 import { db } from "./db/dbConnection";
-import cors from "cors"
+import cors from "cors";
 import authRouter from "./router/auth.router";
 import tableRouter from "./router/table.router";
 import restaurantRouter from "./router/restaurant.router";
@@ -26,7 +26,7 @@ app.use(
 );
 
 app.use(express.json());
-app.use(express.urlencoded());
+app.use(express.urlencoded({ extended: true }));
 
 app.use("/api/v1/user", authRouter);
 app.use("/api/v1/table", tableRouter);

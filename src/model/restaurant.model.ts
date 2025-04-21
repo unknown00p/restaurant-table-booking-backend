@@ -8,17 +8,31 @@ const RestaurantSchema = new mongoose.Schema(
     },
 
     location: {
-      type: String,
-      required: true,
+      city: {
+        type: String,
+        required: true,
+      },
+      area: {
+        type: String,
+        required: true,
+      },
     },
 
     cuisines: {
       type: [String],
-      required: true
+      required: true,
     },
 
     numberOfTables: {
       type: Number,
+      required: true,
+    },
+    openTime: {
+      type: String,
+      required: true,
+    },
+    closeTime: {
+      type: String,
       required: true,
     },
   },

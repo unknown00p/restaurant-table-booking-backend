@@ -6,6 +6,7 @@ import { asyncHandler } from "../utils/asyncHandler";
 import { Booking } from "../model/booking.model";
 import { Restaurant } from "../model/restaurant.model";
 import mongoose from "mongoose";
+import { tableFeilds } from "../types/table.type";
 
 export const getAllTablesOfRestaurant = asyncHandler(async (req, res) => {
   const { restaurantId } = req.params;
@@ -16,8 +17,8 @@ export const getAllTablesOfRestaurant = asyncHandler(async (req, res) => {
 
   const tables = await Table.find({ restaurantId: restaurantId });
 
-  if (!tables) {
-    throw new ApiError(500, "got error while retriving the tables");
+  if (tables.length === 0) {
+    return res.status(200).json(new ApiResponse(200, "No tables found", []));
   }
 
   res
@@ -25,41 +26,86 @@ export const getAllTablesOfRestaurant = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, "tables retrived successfully", tables));
 });
 
-export const addTableToRestaurant = asyncHandler(async (req, res) => {
-  const { totalTableToAdd, capacity } = req.body;
+export const addTablesToRestaurant = asyncHandler(async (req, res) => {
+  const data = req.body;
   const { restaurantId } = req.params;
+  // console.log("data", data);
 
-  if (!totalTableToAdd || !restaurantId || !capacity) {
-    throw new ApiError(400, "All fields are required");
-  }
+  const validStatuses = ["active", "inactive"];
+  const validLocations = ["window", "corner", "near door", "center"];
 
-  // console.log(restaurantId)
+  data.forEach((table: tableFeilds, index) => {
+    if (
+      !table.tableNumber ||
+      !restaurantId ||
+      !table.capacity ||
+      !table.status ||
+      !table.location
+    ) {
+      throw new ApiError(
+        400,
+        `All fields are required for table at index ${index}`
+      );
+    }
+
+    if (!validStatuses.includes(table.status)) {
+      throw new ApiError(400, `Invalid status at index ${index}`);
+    }
+
+    if (!validLocations.includes(table.location)) {
+      throw new ApiError(400, `Invalid location at index ${index}`);
+    }
+  });
 
   const restaurant = await Restaurant.findById(restaurantId);
+
   if (!restaurant) {
     throw new ApiError(404, "Restaurant not found");
   }
 
-  const currentTableCount = restaurant.numberOfTables;
-  const newTables = [];
+  const existingTables = await Table.find({
+    restaurantId,
+    tableNumber: { $in: data.map((t) => t.tableNumber) },
+  });
 
-  for (let i = 0; i < totalTableToAdd; i++) {
-    newTables.push({
-      tableNumber: `T${currentTableCount + i + 1}`,
-      restaurantId: restaurantId,
-      capacity: capacity,
-    });
+  if (existingTables.length) {
+    throw new ApiError(
+      400,
+      `Duplicate tableNumbers found: ${existingTables
+        .map((t) => t.tableNumber)
+        .join(", ")}`
+    );
   }
 
-  await Table.insertMany(newTables);
+  // let tableCount = restaurant.numberOfTables;
 
-  restaurant.numberOfTables += totalTableToAdd;
-  await restaurant.save();
+  // if (!tableCount) {
+  //   await Restaurant.findByIdAndUpdate(restaurantId, {
+  //     numberOfTables: data.length,
+  //   });
+  // } else {
+  // const mergedTableCount = (tableCount += data.length);
+
+  // await Restaurant.findByIdAndUpdate(restaurantId, {
+  //   numberOfTables: mergedTableCount,
+  // });
+  // }
+
+  await Restaurant.findByIdAndUpdate(restaurantId, {
+    $inc: { numberOfTables: data.length },
+  });
+
+  const tablesToInsert = data.map((table) => ({
+    ...table,
+    restaurantId: restaurantId,
+  }));
+
+  const insertedTables = await Table.insertMany(tablesToInsert);
 
   res.status(200).json(
     new ApiResponse(200, "Tables added successfully", {
-      totalTables: restaurant.numberOfTables,
-      added: newTables.length,
+      insertedTables,
+      added: data.length,
     })
   );
 });
@@ -74,7 +120,7 @@ export const deleteTable = asyncHandler(async (req, res) => {
   const deleteTable = await Table.findByIdAndUpdate(
     tableId,
     {
-      isDeleted: true,
+      status: "inactive",
     },
     { new: true }
   );

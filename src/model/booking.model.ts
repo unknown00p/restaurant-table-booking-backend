@@ -14,8 +14,18 @@ const BookingSchema = new mongoose.Schema(
         required: true
     },
 
-    reservationDateTime: {
+    reservationDate: {
         type: Date,
+        required: true
+    },
+
+    reservationTimeStart: {
+        type: String,
+        required: true
+    },
+
+    reservationEnd: {
+        type: String,
         required: true
     },
 
@@ -25,10 +35,9 @@ const BookingSchema = new mongoose.Schema(
         default: "pending"
     },
 
-    reservationEnd: {
-        type: Date,
-        required: true
-    },
+    specialRequest:{
+      type: String,
+    }
   },
   {
     timestamps: true,

@@ -1,7 +1,7 @@
 import { Router } from "express";
 
 import {
-  addTableToRestaurant,
+  addTablesToRestaurant,
   deleteTable,
   getAllTablesOfRestaurant,
   updateTableCapacity,
@@ -11,7 +11,7 @@ const tableRouter = Router();
 
 tableRouter
   .route("/addTableToRestaurant/:restaurantId")
-  .post(addTableToRestaurant);
+  .post(addTablesToRestaurant);
 tableRouter.route("/deleteTable/:tableId").post(deleteTable);
 tableRouter.route("/getAllTablesOfRestaurant/:restaurantId").get(getAllTablesOfRestaurant);
 tableRouter.route("/updateTableCapacity/:tableId").patch(updateTableCapacity);

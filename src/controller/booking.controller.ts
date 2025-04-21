@@ -1,64 +1,139 @@
+import { Request, Response } from "express";
 import { Booking } from "../model/booking.model";
 import { BookingCancelation } from "../model/bookingCancelation.model";
+import { Restaurant } from "../model/restaurant.model";
 import { Table } from "../model/table.model";
 import { TableBooking } from "../model/tableBooking.model";
 import { authorizedUser } from "../types/user.type";
 import { ApiError } from "../utils/apiError";
 import { ApiResponse } from "../utils/apiResponse";
 import { asyncHandler } from "../utils/asyncHandler";
+import {
+  addMinutesToTime,
+  convertStringToDate,
+  convertTo24Hour,
+  isValidTime,
+} from "../utils/formateDateTime";
 
 export const bookTable = asyncHandler(async (req, res) => {
-  const { restaurantId, tableId, reservationDateTime, reservationEnd, userId } =
+  const { restaurantId, people, reservationDate, reservationTime, userId } =
     req.body;
 
   // commented because middleware is not applied for testing reason
 
-  if (!restaurantId || !tableId || !reservationDateTime || !reservationEnd) {
+  if (!restaurantId || !people || !reservationDate || !reservationTime) {
     throw new ApiError(404, "all fields are required");
   }
 
-  // getAllTables
-  const table = await Table.findOne({
-    _id: tableId,
-    restaurantId,
-    isDeleted: { $ne: true },
-  });
+  let formattedReservationTime = reservationTime;
 
-  if (!table) {
-    throw new ApiError(404, "Table not found or has been removed");
+  if (!isValidTime(reservationTime)) {
+    const converted = convertTo24Hour(reservationTime);
+    if (!converted) {
+      throw new ApiError(400, "Invalid time format");
+    }
+
+    formattedReservationTime = converted;
   }
 
-  // check for booked tables
-  const existingBookingIds = await Booking.find({
-    restaurantId,
-    reservationDateTime: { $lt: reservationEnd },
-    reservationEnd: { $gt: reservationDateTime },
-    reservationStatus: "confirmed",
-  }).distinct("_id");
+  const convertedDate = convertStringToDate(reservationDate);
 
-  // check if the requested table is available or not
-  const isTableBooked = await TableBooking.exists({
-    tableId,
-    bookingId: { $in: existingBookingIds },
+  const restaurant = await Restaurant.findById(restaurantId);
+
+  if (!restaurant) {
+    throw new ApiError(404, "restaurant with this id does not exists");
+  }
+
+  // retrive booking data of requested restaurant based on date and time
+
+  // get all the table id's from booking data that are already booked on that date and time
+
+  // filter the tables of that restaurant that are not booked on that date and time using table id's from booking data
+
+  // assign the table randomly to the guest if not have any specialRequest
+
+  // if have any specialRequest send notification to admin to see if request can be fulfilled if yes allow admin to send message to guest of success if not send a cancelation message
+
+  const getBookingDuration = (guests: string) => {
+    if (guests <= "2") return 60;
+    if (guests <= "4") return 90;
+    if (guests <= "8") return 120;
+    return 150;
+  };
+
+  const timeToStay = getBookingDuration(people);
+  const reservationEnd = addMinutesToTime(formattedReservationTime, timeToStay);
+
+  const booking = await Booking.find({
+    restaurantId,
+    reservationDate: convertedDate,
+    reservationTimeStart: { $lt: reservationEnd },
+    reservationEnd: { $gt: formattedReservationTime },
   });
 
-  if (isTableBooked) {
-    throw new ApiError(
-      409,
-      "This table is already booked at the selected time"
-    );
+  let tableIdsMatchedTables = await Promise.all(
+    booking.map(async (data) => {
+      const ids = await TableBooking.find({ bookingId: data.id }).distinct(
+        "tableId"
+      );
+      return ids;
+    })
+  );
+
+  const tableIds = tableIdsMatchedTables.flat().map((id) => {
+    return id.toString();
+  });
+
+  const tables = await Table.find({ restaurantId });
+
+  const filterdTables = tables.filter(
+    ({ _id }) => !tableIds.includes(_id.toString())
+  );
+
+  let shortedTables = filterdTables.filter(
+    (data) => data.capacity >= people
+  )
+
+  let smallest = Number.MAX_VALUE;
+  let matchedTables = [];
+
+  if (shortedTables.length !== 0) {
+    for (let i = 0; i < shortedTables.length; i++) {
+      if (smallest === shortedTables[i].capacity) {
+        smallest = shortedTables[i].capacity;
+        matchedTables.push(shortedTables[i]);
+      } else if (smallest > shortedTables[i].capacity) {
+        matchedTables = []
+        smallest = shortedTables[i].capacity;
+        matchedTables.push(shortedTables[i]);
+      }
+    }
+  }else{
+    if (shortedTables.length == 0) {
+      shortedTables = filterdTables.filter(
+        (data) => data.capacity < people
+      );
+    }
   }
+
+  
+  if (matchedTables.length == 0) {
+    console.log('shortedTables',shortedTables)
+    // Todo --> mearge multiple tables and to fulfill the requirement of the larger party and even after merging the tables if requerment not meets send a message that the 
+  }
+  console.log("matchedTables",matchedTables)
 
   const newBooking = await Booking.create({
     restaurantId,
-    reservationDateTime,
+    reservationDate: convertedDate,
+    reservationTimeStart: formattedReservationTime,
     reservationEnd,
     userId,
     reservationStatus: "confirmed",
   });
 
   const tableBooking = await TableBooking.create({
-    tableId,
+    tableId: matchedTables[0]?._id,
     bookingId: newBooking._id,
     restaurantId,
   });
@@ -69,9 +144,15 @@ export const bookTable = asyncHandler(async (req, res) => {
       tableBooking,
     })
   );
+
+  // res.status(200).json(
+  //   new ApiResponse(201, "Table booked successfully", {
+  //     data: "testing",
+  //   })
+  // );
 });
 
-export const getAvailableTable = asyncHandler(async (req, res) => {
+export const getAvailableTableTime = asyncHandler(async (req, res) => {
   const { restaurantId, reservationDateTime, reservationEnd } = req.body;
 
   if (!restaurantId || !reservationDateTime || !reservationEnd) {
@@ -146,7 +227,7 @@ export const cancelBooking = asyncHandler(async (req: authorizedUser, res) => {
     );
   }
 
-  const bookingDetail = await Booking.findById(bookingId)
+  const bookingDetail = await Booking.findById(bookingId);
 
   // second delete booking of matched id
   const deleteBooking = await Booking.findByIdAndDelete(bookingId);
@@ -161,7 +242,9 @@ export const cancelBooking = asyncHandler(async (req: authorizedUser, res) => {
     reason,
   });
 
-  res.status(200).json(new ApiResponse(200, "booking cancled successfully",cancelHistory));
+  res
+    .status(200)
+    .json(new ApiResponse(200, "booking cancled successfully", cancelHistory));
 });
 
 export const getBookingOfUser = asyncHandler(
