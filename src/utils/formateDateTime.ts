@@ -61,4 +61,56 @@ const addMinutesToTime = (timeStr: string, minutesToAdd: number) => {
   return `${newHour}:${newMinute}`;
 };
 
-export { isValidTime, convertTo24Hour, convertStringToDate, addMinutesToTime };
+const genrateNearbySlots = (timeStr: string) => {
+  const slots = [];
+  const offsets = [-60, -30, 0, 30, 60];
+
+  for (const offset of offsets) {
+    const time = addMinutesToTime(timeStr, offset);
+
+    if (isValidTime(time)) {
+      slots.push(time);
+    }
+  }
+
+  return slots;
+};
+
+function combineDateAndTime(dateStr: string, timeStr: string) {
+  const [hour, minute] = timeStr.split(":").map(Number);
+  const baseDate = new Date(dateStr);
+  baseDate.setUTCHours(hour);
+  baseDate.setUTCMinutes(minute);
+  baseDate.setUTCSeconds(0);
+  baseDate.setUTCMilliseconds(0);
+
+  return baseDate;
+}
+
+function createDateWithTime(baseDate: Date, timeStr: string) {
+  const [hour, minute] = timeStr.split(":").map(Number);
+
+  const result = new Date(
+    baseDate.getFullYear(),
+    baseDate.getMonth(),
+    baseDate.getDate(),
+    hour,
+    minute,
+    0,
+    0
+  );
+
+  const localResult = new Date(result.getTime() - result.getTimezoneOffset() * 60000);
+
+  return localResult;
+}
+
+export {
+  isValidTime,
+  convertTo24Hour,
+  convertStringToDate,
+  addMinutesToTime,
+  genrateNearbySlots,
+  combineDateAndTime,
+  createDateWithTime,
+};

@@ -10,18 +10,30 @@ import { ApiResponse } from "../utils/apiResponse";
 import { asyncHandler } from "../utils/asyncHandler";
 import {
   addMinutesToTime,
+  combineDateAndTime,
   convertStringToDate,
   convertTo24Hour,
+  createDateWithTime,
   isValidTime,
 } from "../utils/formateDateTime";
 
 export const bookTable = asyncHandler(async (req, res) => {
-  const { restaurantId, people, reservationDate, reservationTime, userId } =
-    req.body;
+  const {
+    restaurantId,
+    // tableId,
+    people,
+    reservationDate,
+    reservationTime,
+    userId,
+  } = req.body;
 
-  // commented because middleware is not applied for testing reason
-
-  if (!restaurantId || !people || !reservationDate || !reservationTime) {
+  if (
+    !restaurantId ||
+    !people ||
+    !reservationDate ||
+    !reservationTime
+    // !tableId
+  ) {
     throw new ApiError(404, "all fields are required");
   }
 
@@ -44,16 +56,6 @@ export const bookTable = asyncHandler(async (req, res) => {
     throw new ApiError(404, "restaurant with this id does not exists");
   }
 
-  // retrive booking data of requested restaurant based on date and time
-
-  // get all the table id's from booking data that are already booked on that date and time
-
-  // filter the tables of that restaurant that are not booked on that date and time using table id's from booking data
-
-  // assign the table randomly to the guest if not have any specialRequest
-
-  // if have any specialRequest send notification to admin to see if request can be fulfilled if yes allow admin to send message to guest of success if not send a cancelation message
-
   const getBookingDuration = (guests: string) => {
     if (guests <= "2") return 60;
     if (guests <= "4") return 90;
@@ -64,23 +66,60 @@ export const bookTable = asyncHandler(async (req, res) => {
   const timeToStay = getBookingDuration(people);
   const reservationEnd = addMinutesToTime(formattedReservationTime, timeToStay);
 
-  const booking = await Booking.find({
-    restaurantId,
-    reservationDate: convertedDate,
-    reservationTimeStart: { $lt: reservationEnd },
-    reservationEnd: { $gt: formattedReservationTime },
-  });
-
-  let tableIdsMatchedTables = await Promise.all(
-    booking.map(async (data) => {
-      const ids = await TableBooking.find({ bookingId: data.id }).distinct(
-        "tableId"
-      );
-      return ids;
-    })
+  const basedDate = combineDateAndTime(
+    String(convertedDate),
+    formattedReservationTime
   );
 
-  const tableIds = tableIdsMatchedTables.flat().map((id) => {
+  const closingDateWithTime = combineDateAndTime(
+    String(convertedDate),
+    restaurant.closeTime
+  );
+  const reservationEndTime = createDateWithTime(basedDate, reservationEnd);
+
+  if (reservationEndTime > closingDateWithTime) {
+    throw new ApiError(
+      404,
+      "table for that time in this restaurant is available"
+    );
+  }
+
+  // console.table([restaurantId,convertedDate,reservationEnd,formattedReservationTime])
+  // console.log(convertedDate)
+
+  const matchedTablesIds = await Booking.aggregate([
+    {
+      $match: {
+        restaurantId,
+        reservationDate: convertedDate,
+        reservationTimeStart: { $lt: reservationEnd },
+        reservationEnd: { $gt: formattedReservationTime },
+      },
+    },
+    {
+      $lookup: {
+        from: "tablebookings",
+        localField: "_id",
+        foreignField: "bookingId",
+        as: "matchedBookingTables",
+      },
+    },
+    {
+      $project: {
+        tableIds: {
+          $map: {
+            input: "$matchedBookingTables",
+            as: "table",
+            in: "$$table.tableId",
+          },
+        },
+      },
+    },
+  ]);
+
+  // console.log("matchedTablesIds", matchedTablesIds);
+
+  const tableIds = matchedTablesIds.flat().map((id) => {
     return id.toString();
   });
 
@@ -90,9 +129,8 @@ export const bookTable = asyncHandler(async (req, res) => {
     ({ _id }) => !tableIds.includes(_id.toString())
   );
 
-  let shortedTables = filterdTables.filter(
-    (data) => data.capacity >= people
-  )
+  let shortedTables = filterdTables.filter((data) => data.capacity >= people);
+  // console.log("shortedTables", shortedTables);
 
   let smallest = Number.MAX_VALUE;
   let matchedTables = [];
@@ -103,90 +141,87 @@ export const bookTable = asyncHandler(async (req, res) => {
         smallest = shortedTables[i].capacity;
         matchedTables.push(shortedTables[i]);
       } else if (smallest > shortedTables[i].capacity) {
-        matchedTables = []
+        matchedTables = [];
         smallest = shortedTables[i].capacity;
         matchedTables.push(shortedTables[i]);
       }
     }
-  }else{
+  } else {
     if (shortedTables.length == 0) {
-      shortedTables = filterdTables.filter(
-        (data) => data.capacity < people
-      );
+      shortedTables = filterdTables.filter((data) => data.capacity < people);
     }
   }
 
-  
-  if (matchedTables.length == 0) {
-    console.log('shortedTables',shortedTables)
-    // Todo --> mearge multiple tables and to fulfill the requirement of the larger party and even after merging the tables if requerment not meets send a message that the 
-  }
-  console.log("matchedTables",matchedTables)
+  // if (matchedTables.length == 0) {
+  //   console.log("shortedTables", shortedTables);
+  //   // Todo --> mearge multiple tables and to fulfill the requirement of the larger party and even after merging the tables if requerment not meets send a message that the
+  // }
+  // console.log("matchedTables", matchedTables);
 
-  const newBooking = await Booking.create({
-    restaurantId,
-    reservationDate: convertedDate,
-    reservationTimeStart: formattedReservationTime,
-    reservationEnd,
-    userId,
-    reservationStatus: "confirmed",
-  });
+  // const newBooking = await Booking.create({
+  //   restaurantId,
+  //   reservationDate: convertedDate,
+  //   reservationTimeStart: formattedReservationTime,
+  //   reservationEnd,
+  //   userId,
+  //   reservationStatus: "confirmed",
+  // });
 
-  const tableBooking = await TableBooking.create({
-    tableId: matchedTables[0]?._id,
-    bookingId: newBooking._id,
-    restaurantId,
-  });
+  // const tableBooking = await TableBooking.create({
+  //   tableId: matchedTables[0]?._id,
+  //   bookingId: newBooking._id,
+  //   restaurantId,
+  // });
+
+  // res.status(201).json(
+  //   new ApiResponse(201, "Table booked successfully", {
+  //     booking: newBooking,
+  //     tableBooking,
+  //   })
+  // );
 
   res.status(201).json(
     new ApiResponse(201, "Table booked successfully", {
-      booking: newBooking,
-      tableBooking,
+      data: matchedTables,
     })
   );
-
-  // res.status(200).json(
-  //   new ApiResponse(201, "Table booked successfully", {
-  //     data: "testing",
-  //   })
-  // );
 });
 
-export const getAvailableTableTime = asyncHandler(async (req, res) => {
-  const { restaurantId, reservationDateTime, reservationEnd } = req.body;
+// export const getAvailableTableTime = asyncHandler(async (req, res) => {
+//   const { restaurantId, reservationDateTime, reservationEnd } = req.body;
 
-  if (!restaurantId || !reservationDateTime || !reservationEnd) {
-    throw new ApiError(404, "all fields are required");
-  }
+//   if (!restaurantId || !reservationDateTime || !reservationEnd) {
+//     throw new ApiError(404, "all fields are required");
+//   }
 
-  // getAllTables
-  const allTables = await Table.find({ restaurantId: restaurantId });
+//   // getAllTables
+//   const allTables = await Table.find({ restaurantId: restaurantId });
 
-  const overlappingBookingIds = await Booking.find({
-    restaurantId,
-    reservationDateTime: { $lt: reservationEnd },
-    reservationEnd: { $gt: reservationDateTime },
-    reservationStatus: "confirmed",
-  }).distinct("_id");
+//   const overlappingBookingIds = await Booking.find({
+//     restaurantId,
+//     reservationDateTime: { $lt: reservationEnd },
+//     reservationEnd: { $gt: reservationDateTime },
+//     reservationStatus: "confirmed",
+//   }).distinct("_id");
 
-  // console.log("overlappingBookingIds", overlappingBookingIds);
+//   // console.log("overlappingBookingIds", overlappingBookingIds);
 
-  const bookedTableIds = await TableBooking.find({
-    bookingId: { $in: overlappingBookingIds },
-  }).distinct("tableId");
+//   const bookedTableIds = await TableBooking.find({
+//     bookingId: { $in: overlappingBookingIds },
+//   }).distinct("tableId");
 
-  // console.log("bookedTableIds", bookedTableIds);
+//   // console.log("bookedTableIds", bookedTableIds);
 
-  const bookedTableIdSet = new Set(bookedTableIds.map((id) => id.toString()));
+//   const bookedTableIdSet = new Set(bookedTableIds.map((id) => id.toString()));
 
-  const availableTables = allTables.filter(
-    (table) => !bookedTableIdSet.has(table._id?.toString())
-  );
+//   const availableTables = allTables.filter(
+//     (table) => !bookedTableIdSet.has(table._id?.toString())
+//   );
 
-  // console.log("availableTables", availableTables);
+//   // console.log("availableTables", availableTables);
 
-  res.status(200).json(new ApiResponse(200, "", availableTables));
-});
+//   res.status(200).json(new ApiResponse(200, "", availableTables));
+// });
 
 export const getBookingDetailsById = asyncHandler(async (req, res) => {
   const { bookingId } = req.params;
