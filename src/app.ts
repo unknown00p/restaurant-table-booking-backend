@@ -18,7 +18,7 @@ const port = process.env.PORT || 3000;
 
 app.use(
   cors({
-    origin: "https://beaker-0-v1.vercel.app",
+    origin: ["https://beaker-0-v1.vercel.app","http://localhost:5173"],
     methods: "GET, POST, PUT, DELETE, OPTIONS, PATCH",
     allowedHeaders: "Content-Type, Authorization",
     credentials: true,

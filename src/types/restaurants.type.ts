@@ -1,7 +1,5 @@
 export type searchInputTypes = {
-  restaurantName?: string;
-  location?: { city?: string; area?: string };
-  cuisine?: string;
+  searchTerm: string;
   people?: number;
   reservationDate?: string;
   reservationTime?: string;

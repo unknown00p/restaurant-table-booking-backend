@@ -19,14 +19,12 @@ import {
 import { TableBooking } from "../model/tableBooking.model";
 
 export const searchWithAvailabilityService = async ({
-  restaurantName,
-  location,
-  cuisine,
+  searchTerm,
   people,
   reservationDate,
   reservationTime,
 }: searchInputTypes) => {
-  if (!reservationDate || !reservationTime || !people || !location) {
+  if (!reservationDate || !reservationTime || !people || !searchTerm) {
     throw new ApiError(
       404,
       "please provide date, time, location and numberOfPeople fields"
@@ -45,25 +43,39 @@ export const searchWithAvailabilityService = async ({
     convertedTime = converted;
   }
 
-  const query: any = {};
+  // const query: any = {};
 
-  const { city, area } = location;
+  // const { city, area } = location;
 
-  if (city) {
-    query["location.city"] = city;
-  }
+  // if (city) {
+  //   query["location.city"] = city;
+  // }
 
-  if (area) {
-    query["location.area"] = area;
-  }
+  // if (area) {
+  //   query["location.area"] = area;
+  // }
 
-  if (restaurantName) {
-    query.name = restaurantName;
-  }
+  // if (restaurantName) {
+  //   query.name = restaurantName;
+  // }
 
-  if (cuisine) {
-    query.cuisines = cuisine;
-  }
+  // if (cuisine) {
+  //   query.cuisines = cuisine;
+  // }
+
+  const searchTerms = searchTerm.toLowerCase().trim();
+  const keywords = searchTerms.split(/\s+/);
+
+  const query = {
+    $or: keywords.map((keyword) => ({
+      $or: [
+        { name: { $regex: keyword, $options: "i" } },
+        { cuisines: { $regex: keyword, $options: "i" } },
+        { "location.city": { $regex: keyword, $options: "i" } },
+        { "location.area": { $regex: keyword, $options: "i" } },
+      ],
+    })),
+  };
 
   const restaurant = await Restaurant.find(query);
 
@@ -97,14 +109,20 @@ export const searchWithAvailabilityService = async ({
         const timeToStay = getBookingDuration(Number(people));
         const reservationEnd = addMinutesToTime(timeSlot, timeToStay);
 
-          const basedDate = combineDateAndTime(
-            String(convertedDate),
-            reservationTime
-          );
-        
-          const closingDateWithTime = combineDateAndTime(String(convertedDate),data.closeTime)
-        
-          const reservationEndTime = createDateWithTime(basedDate, reservationEnd);
+        const basedDate = combineDateAndTime(
+          String(convertedDate),
+          reservationTime
+        );
+
+        const closingDateWithTime = combineDateAndTime(
+          String(convertedDate),
+          data.closeTime
+        );
+
+        const reservationEndTime = createDateWithTime(
+          basedDate,
+          reservationEnd
+        );
 
         if (reservationEndTime > closingDateWithTime) continue;
 
@@ -201,12 +219,14 @@ export const addRestaurantService = async ({
   closeTime,
 }: restaurantInputType) => {
   if (
-    !name ||
-    !location ||
-    !cuisines ||
-    !numberOfTables ||
-    !openTime ||
-    !closeTime
+    typeof name !== "string" ||
+    typeof location !== "object" ||
+    typeof location.city !== "string" ||
+    typeof location.area !== "string" ||
+    !Array.isArray(cuisines) ||
+    typeof numberOfTables !== "number" ||
+    typeof openTime !== "string" ||
+    typeof closeTime !== "string"
   ) {
     throw new ApiError(404, "all feilds are required");
   }
@@ -249,9 +269,12 @@ export const addRestaurantService = async ({
   }
 
   const addedRestaurant = await Restaurant.create({
-    name,
-    location,
-    cuisines,
+    name: name.trim().toLowerCase(),
+    location: {
+      city: location.city.trim().toLowerCase(),
+      area: location.area.trim().toLowerCase(),
+    },
+    cuisines: cuisines.map((cuisine) => cuisine.trim().toLowerCase()),
     numberOfTables,
     openTime: formattedOpenTime,
     closeTime: formattedCloseTime,
