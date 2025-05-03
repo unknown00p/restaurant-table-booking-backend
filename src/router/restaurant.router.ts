@@ -7,10 +7,11 @@ import {
   updateName,
   SearchRestaurantWithAvailiblity
 } from "../controller/restaurant.controller";
+import { upload } from "../middleware/multer.middleware";
 
 const restaurantRouter = Router();
 
-restaurantRouter.route("/").post(addRestaurant)
+restaurantRouter.route("/").post(upload.fields([{ name: "mainImage" }, { name: "subImages" }]),addRestaurant)
 restaurantRouter.route("/getRestaurantById/:restaurantId").get(getRestaurantById)
 restaurantRouter.route("/updateName").patch(updateName)
 restaurantRouter.route("/updateCuisine").patch(updateCuisine)

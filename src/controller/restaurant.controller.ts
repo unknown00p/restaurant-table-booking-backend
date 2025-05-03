@@ -13,11 +13,39 @@ import {
 
 export const addRestaurant = asyncHandler(
   async (req: authorizedUser, res: Response) => {
-    const restaurant = await addRestaurantService(req.body);
+    const { name, city, area, cuisines, numberOfTables, openTime, closeTime } =
+      req.body;
 
+    const { mainImage, subImages } = req.files as {
+      [fieldname: string]: Express.Multer.File[];
+    };
+
+    const location = {
+      city,
+      area,
+    };
+
+    const numberOfTablesConverted = Number(numberOfTables);
+
+    const restaurant = await addRestaurantService({
+      name,
+      location,
+      cuisines,
+      numberOfTables: numberOfTablesConverted,
+      openTime,
+      closeTime,
+      mainImage,
+      subImages,
+    });
+
+    // res
+    //   .status(200)
+    //   .json(new ApiResponse(200, "added restaurant successfully", restaurant));
     res
       .status(200)
-      .json(new ApiResponse(200, "added restaurant successfully", restaurant));
+      .json(
+        new ApiResponse(200, "added restaurant successfully", "restaurant")
+      );
   }
 );
 

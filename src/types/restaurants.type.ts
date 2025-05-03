@@ -12,4 +12,6 @@ export type restaurantInputType = {
   numberOfTables?: number;
   openTime?: string;
   closeTime?: string;
+  mainImage: Express.Multer.File[] | { [fieldname: string]: File[] };
+  subImages: Express.Multer.File[] | { [fieldname: string]: File[] };
 };

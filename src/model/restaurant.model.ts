@@ -7,6 +7,13 @@ const RestaurantSchema = new mongoose.Schema(
       required: true,
     },
 
+    mainImage: {
+      type: String,
+      required: true,
+    },
+
+    subImages: { type: [String] },
+
     location: {
       city: {
         type: String,

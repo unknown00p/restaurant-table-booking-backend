@@ -17,6 +17,7 @@ import {
   isValidTime,
 } from "../utils/formateDateTime";
 import { TableBooking } from "../model/tableBooking.model";
+import { uploadToImageKit } from "../utils/imageUpload";
 
 export const searchWithAvailabilityService = async ({
   searchTerm,
@@ -217,6 +218,8 @@ export const addRestaurantService = async ({
   numberOfTables,
   openTime,
   closeTime,
+  mainImage,
+  subImages,
 }: restaurantInputType) => {
   if (
     typeof name !== "string" ||
@@ -230,6 +233,14 @@ export const addRestaurantService = async ({
   ) {
     throw new ApiError(404, "all feilds are required");
   }
+
+  const mainImageRes = await uploadToImageKit(mainImage);
+
+  const subImagesUrl = [];
+  const subImagesRes = await uploadToImageKit(subImages);
+  subImagesRes.map((img) => {
+    subImagesUrl.push(img.url);
+  });
 
   const restaurant = await Restaurant.findOne({ name });
 
@@ -278,6 +289,8 @@ export const addRestaurantService = async ({
     numberOfTables,
     openTime: formattedOpenTime,
     closeTime: formattedCloseTime,
+    mainImage: mainImageRes[0].url,
+    subImages: subImagesUrl,
   });
 
   if (!addedRestaurant) {
