@@ -22,7 +22,6 @@ export const uploadToImageKit = async (files) => {
       await fs.unlink(file.path);
     }
 
-    // console.log("All uploads successful:", uploadResponses);
     return uploadResponses;
   } catch (error) {
     console.error("Upload Error:", error);

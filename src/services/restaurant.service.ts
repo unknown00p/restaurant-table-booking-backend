@@ -203,6 +203,7 @@ export const searchWithAvailabilityService = async ({
       return {
         restaurantId: data._id,
         name: data.name,
+        mainImage: data.mainImage,
         availableSlots,
       };
     })
