@@ -12,12 +12,12 @@ import {
   combineDateAndTime,
   convertStringToDate,
   convertTo24Hour,
-  createDateWithTime,
   genrateNearbySlots,
   isValidTime,
 } from "../utils/formateDateTime";
 import { TableBooking } from "../model/tableBooking.model";
 import { uploadToImageKit } from "../utils/imageUpload";
+import { RestaurantRating } from "../model/restaurantRating";
 
 export const searchWithAvailabilityService = async ({
   searchTerm,
@@ -43,26 +43,6 @@ export const searchWithAvailabilityService = async ({
 
     convertedTime = converted;
   }
-
-  // const query: any = {};
-
-  // const { city, area } = location;
-
-  // if (city) {
-  //   query["location.city"] = city;
-  // }
-
-  // if (area) {
-  //   query["location.area"] = area;
-  // }
-
-  // if (restaurantName) {
-  //   query.name = restaurantName;
-  // }
-
-  // if (cuisine) {
-  //   query.cuisines = cuisine;
-  // }
 
   const searchTerms = searchTerm.toLowerCase().trim();
   const keywords = searchTerms.split(/\s+/);
@@ -100,7 +80,6 @@ export const searchWithAvailabilityService = async ({
   };
 
   const timeSlots = genrateNearbySlots(convertedTime);
-  // console.log("timeSlots", timeSlots);
 
   const restaurants = await Promise.all(
     opendRestaurant.map(async (data) => {
@@ -110,30 +89,29 @@ export const searchWithAvailabilityService = async ({
         const timeToStay = getBookingDuration(Number(people));
         const reservationEnd = addMinutesToTime(timeSlot, timeToStay);
 
-        const basedDate = combineDateAndTime(
+        const reservationStartDateTime = combineDateAndTime(
           String(convertedDate),
-          reservationTime
+          timeSlot
         );
 
-        const closingDateWithTime = combineDateAndTime(
+        const restaurantClosingDateTime = combineDateAndTime(
           String(convertedDate),
           data.closeTime
         );
 
-        const reservationEndTime = createDateWithTime(
-          basedDate,
+        const reservationEndDateTime = combineDateAndTime(
+          String(convertedDate),
           reservationEnd
         );
 
-        if (reservationEndTime > closingDateWithTime) continue;
+        if (reservationEndDateTime > restaurantClosingDateTime) continue;
 
         const matchedTablesIds = await Booking.aggregate([
           {
             $match: {
               restaurantId: data._id,
-              reservationDate: convertedDate,
-              reservationTimeStart: { $lt: reservationEnd },
-              reservationEnd: { $gt: timeSlot },
+              reservationStartDateTime: { $lt: reservationEndDateTime },
+              reservationEndDateTime: { $gt: reservationStartDateTime },
             },
           },
           {
@@ -205,6 +183,8 @@ export const searchWithAvailabilityService = async ({
         name: data.name,
         mainImage: data.mainImage,
         availableSlots,
+        cuisines: data.cuisines,
+        area: data.location.area,
       };
     })
   );
@@ -428,4 +408,61 @@ export const removeRestaurantService = async ({
   }
 
   return deleteRestaurant;
+};
+
+export const rateRestaurantService = async ({
+  restaurantId,
+  userId,
+  ratingNumber,
+  ratingText,
+}: {
+  restaurantId: string;
+  userId: string;
+  ratingNumber: number;
+  ratingText: string;
+}) => {
+  if (!restaurantId || !userId || !ratingNumber || !ratingText) {
+    throw new ApiError(400, "please provide all fields");
+  }
+
+  // check if user is allowed to rate
+  const bookingData = await Booking.find({
+    restaurantId,
+    userId,
+    reservationStatus: "confirmed",
+  });
+
+  const validBookings = bookingData.filter((b) => {
+    return b.reservationEndDateTime < new Date();
+  });
+
+  console.log(validBookings);
+
+  if (validBookings.length == 0) {
+    throw new ApiError(402,"you are not allowed to rate")
+  }
+
+  const updatedOrCreatedRating = await RestaurantRating.findOneAndUpdate(
+    { restaurantId, userId },
+    { $set: { ratingNumber, ratingText } },
+    { upsert: true, new: true, runValidators: true }
+  );
+
+  if (!updatedOrCreatedRating) {
+    throw new ApiError(405, "Error while adding/updating rating");
+  }
+
+  return "updatedOrCreatedRating";
+};
+
+export const getRateOfRestaurant = async ({
+  restaurantId,
+}: {
+  restaurantId: string;
+}) => {
+  if (!restaurantId) {
+    throw new ApiError(401, "");
+  }
+
+  const data = await RestaurantRating.find();
 };

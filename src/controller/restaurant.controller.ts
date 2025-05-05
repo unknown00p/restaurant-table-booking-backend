@@ -5,6 +5,7 @@ import { authorizedUser } from "../types/user.type";
 import {
   addRestaurantService,
   getRestaurantByIdService,
+  rateRestaurantService,
   removeRestaurantService,
   searchWithAvailabilityService,
   updateCuisineService,
@@ -38,14 +39,9 @@ export const addRestaurant = asyncHandler(
       subImages,
     });
 
-    // res
-    //   .status(200)
-    //   .json(new ApiResponse(200, "added restaurant successfully", restaurant));
     res
       .status(200)
-      .json(
-        new ApiResponse(200, "added restaurant successfully", "restaurant")
-      );
+      .json(new ApiResponse(200, "added restaurant successfully", restaurant));
   }
 );
 
@@ -107,3 +103,13 @@ export const SearchRestaurantWithAvailiblity: RequestHandler = asyncHandler(
       );
   }
 );
+
+export const rateRestaurant = asyncHandler(async (req, res) => {
+  const { restaurantId, userId, ratingNumber, ratingText } = req.body;
+
+  const resData = await rateRestaurantService({ restaurantId, userId, ratingNumber, ratingText });
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, "rating added successfully", resData));
+});

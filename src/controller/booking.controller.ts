@@ -46,8 +46,7 @@ export const getBookingOfUser = asyncHandler(
     const userId = req.user?._id;
     // const userId = req.params
 
-
-    const booking = await getBookingOfUserService({userId})
+    const booking = await getBookingOfUserService({ userId });
 
     res
       .status(200)

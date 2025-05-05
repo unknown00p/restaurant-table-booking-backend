@@ -10,7 +10,6 @@ import {
   combineDateAndTime,
   convertStringToDate,
   convertTo24Hour,
-  createDateWithTime,
   isValidTime,
 } from "../utils/formateDateTime";
 import { BookingCancelation } from "../model/bookingCancelation.model";
@@ -22,13 +21,7 @@ export const bookTableService = async ({
   reservationTime,
   userId,
 }: bookingDataType) => {
-  if (
-    !restaurantId ||
-    !people ||
-    !reservationDate ||
-    !reservationTime
-    // !tableId
-  ) {
+  if (!restaurantId || !people || !reservationDate || !reservationTime) {
     throw new ApiError(404, "all fields are required");
   }
 
@@ -61,21 +54,25 @@ export const bookTableService = async ({
   const timeToStay = getBookingDuration(Number(people));
   const reservationEnd = addMinutesToTime(formattedReservationTime, timeToStay);
 
-  const basedDate = combineDateAndTime(
+  const reservationStartDateTime = combineDateAndTime(
     String(convertedDate),
     formattedReservationTime
   );
 
-  const closingDateWithTime = combineDateAndTime(
+  const restaurantClosingDateTime = combineDateAndTime(
     String(convertedDate),
     restaurant.closeTime
   );
-  const reservationEndTime = createDateWithTime(basedDate, reservationEnd);
 
-  if (reservationEndTime > closingDateWithTime) {
+  const reservationEndDateTime = combineDateAndTime(
+    String(convertedDate),
+    reservationEnd
+  );
+
+  if (reservationEndDateTime > restaurantClosingDateTime) {
     throw new ApiError(
       404,
-      "table for that time in this restaurant is available"
+      "table for that time in this restaurant is not available"
     );
   }
 
@@ -86,9 +83,8 @@ export const bookTableService = async ({
     {
       $match: {
         restaurantId,
-        reservationDate: convertedDate,
-        reservationTimeStart: { $lt: reservationEnd },
-        reservationEnd: { $gt: formattedReservationTime },
+        reservationStartDateTime: { $lt: reservationEndDateTime },
+        reservationEndDateTime: { $gt: reservationStartDateTime },
       },
     },
     {
@@ -160,9 +156,8 @@ export const bookTableService = async ({
 
   const newBooking = await Booking.create({
     restaurantId,
-    reservationDate: convertedDate,
-    reservationTimeStart: formattedReservationTime,
-    reservationEnd,
+    reservationStartDateTime,
+    reservationEndDateTime,
     userId,
     reservationStatus: "confirmed",
   });
@@ -177,6 +172,7 @@ export const bookTableService = async ({
     newBooking,
     tableBooking,
   };
+
 };
 
 export const getBookingDetailsByIdService = async (bookingId: string) => {
@@ -242,9 +238,7 @@ export const cancelBookingService = async ({
   return cancelHistory;
 };
 
-export const getBookingOfUserService = async ({
-  userId,
-}) => {
+export const getBookingOfUserService = async ({ userId }) => {
   if (!userId) {
     throw new ApiError(401, "Unauthorized: User not found");
   }
@@ -265,5 +259,5 @@ export const getBookingOfUserService = async ({
     },
   ]);
 
-  return booking
+  return booking;
 };

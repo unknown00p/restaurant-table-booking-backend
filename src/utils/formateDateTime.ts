@@ -87,24 +87,6 @@ function combineDateAndTime(dateStr: string, timeStr: string) {
   return baseDate;
 }
 
-function createDateWithTime(baseDate: Date, timeStr: string) {
-  const [hour, minute] = timeStr.split(":").map(Number);
-
-  const result = new Date(
-    baseDate.getFullYear(),
-    baseDate.getMonth(),
-    baseDate.getDate(),
-    hour,
-    minute,
-    0,
-    0
-  );
-
-  const localResult = new Date(result.getTime() - result.getTimezoneOffset() * 60000);
-
-  return localResult;
-}
-
 export {
   isValidTime,
   convertTo24Hour,
@@ -112,5 +94,4 @@ export {
   addMinutesToTime,
   genrateNearbySlots,
   combineDateAndTime,
-  createDateWithTime,
 };

@@ -34,7 +34,7 @@ app.use("/api/v1/restaurant", restaurantRouter);
 app.use("/api/v1/booking", bookingRouter);
 
 app.get("/", (req, res) => {
-  res.send("Hello World!");
+  res.send("backend started!");
 });
 
 app.listen(port, () => {

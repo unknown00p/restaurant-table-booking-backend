@@ -14,18 +14,13 @@ const BookingSchema = new mongoose.Schema(
         required: true
     },
 
-    reservationDate: {
+    reservationStartDateTime: {
         type: Date,
         required: true
     },
 
-    reservationTimeStart: {
-        type: String,
-        required: true
-    },
-
-    reservationEnd: {
-        type: String,
+    reservationEndDateTime: {
+        type: Date,
         required: true
     },
 
