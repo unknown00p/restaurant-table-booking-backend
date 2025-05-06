@@ -4,6 +4,8 @@ import { ApiResponse } from "../utils/apiResponse";
 import { authorizedUser } from "../types/user.type";
 import {
   addRestaurantService,
+  allowRatingService,
+  getRatingOfRestaurantService,
   getRestaurantByIdService,
   rateRestaurantService,
   removeRestaurantService,
@@ -107,7 +109,31 @@ export const SearchRestaurantWithAvailiblity: RequestHandler = asyncHandler(
 export const rateRestaurant = asyncHandler(async (req, res) => {
   const { restaurantId, userId, ratingNumber, ratingText } = req.body;
 
-  const resData = await rateRestaurantService({ restaurantId, userId, ratingNumber, ratingText });
+  const resData = await rateRestaurantService({
+    restaurantId,
+    userId,
+    ratingNumber,
+    ratingText,
+  });
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, "rating added successfully", resData));
+});
+
+export const allowRating = asyncHandler(async (req, res) => {
+  const { restaurantId, userId } = req.body;
+
+  const resData = await allowRatingService({ restaurantId, userId });
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, "rating added successfully", resData));
+});
+
+export const getRatingOfRestaurant = asyncHandler(async (req, res) => {
+  const { restaurantId } = req.params;
+  const resData = await getRatingOfRestaurantService({ restaurantId });
 
   res
     .status(200)

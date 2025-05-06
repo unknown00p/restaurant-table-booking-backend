@@ -18,6 +18,7 @@ import {
 import { TableBooking } from "../model/tableBooking.model";
 import { uploadToImageKit } from "../utils/imageUpload";
 import { RestaurantRating } from "../model/restaurantRating";
+import mongoose from "mongoose";
 
 export const searchWithAvailabilityService = async ({
   searchTerm,
@@ -436,10 +437,8 @@ export const rateRestaurantService = async ({
     return b.reservationEndDateTime < new Date();
   });
 
-  console.log(validBookings);
-
   if (validBookings.length == 0) {
-    throw new ApiError(402,"you are not allowed to rate")
+    throw new ApiError(402, "you are not allowed to rate");
   }
 
   const updatedOrCreatedRating = await RestaurantRating.findOneAndUpdate(
@@ -452,17 +451,64 @@ export const rateRestaurantService = async ({
     throw new ApiError(405, "Error while adding/updating rating");
   }
 
-  return "updatedOrCreatedRating";
+  return updatedOrCreatedRating;
 };
 
-export const getRateOfRestaurant = async ({
+export const getRatingOfRestaurantService = async ({
   restaurantId,
 }: {
   restaurantId: string;
 }) => {
   if (!restaurantId) {
-    throw new ApiError(401, "");
+    throw new ApiError(401, "restaurantId is required");
   }
 
-  const data = await RestaurantRating.find();
+  const data = await RestaurantRating.aggregate([
+    { $match: { restaurantId: new mongoose.Types.ObjectId(restaurantId) } },
+    {
+      $group: {
+        _id: "$restaurantId",
+        averageRating: { $avg: "$ratingNumber" },
+        totalRatings: { $sum: 1 },
+        reviews: {
+          $push: {
+            userId: "$userId",
+            ratingNumber: "$ratingNumber",
+            ratingText: "$ratingText",
+            createdAt: "$createdAt"
+          }
+        }
+      },
+    },
+  ]);
+
+  return data
+};
+
+export const allowRatingService = async ({
+  restaurantId,
+  userId,
+}: {
+  restaurantId: string;
+  userId: string;
+}) => {
+  if (!restaurantId || !userId) {
+    throw new ApiError(401, "restaurantId and userId is required");
+  }
+
+  const bookingData = await Booking.find({
+    restaurantId,
+    userId,
+    reservationStatus: "confirmed",
+  });
+
+  const validBookings = bookingData.filter((b) => {
+    return b.reservationEndDateTime < new Date();
+  });
+
+  if (validBookings.length == 0) {
+    return false
+  }
+
+  return true
 };

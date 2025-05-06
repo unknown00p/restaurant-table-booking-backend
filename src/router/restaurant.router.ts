@@ -6,7 +6,9 @@ import {
   updateCuisine,
   updateName,
   SearchRestaurantWithAvailiblity,
-  rateRestaurant
+  rateRestaurant,
+  getRatingOfRestaurant,
+  allowRating
 } from "../controller/restaurant.controller";
 import { upload } from "../middleware/multer.middleware";
 
@@ -19,5 +21,7 @@ restaurantRouter.route("/updateCuisine").patch(updateCuisine)
 restaurantRouter.route("/SearchRestaurant").post(SearchRestaurantWithAvailiblity)
 restaurantRouter.route("/removeRestaurant/:restaurantId").delete(removeRestaurant)
 restaurantRouter.route("/rateRestaurant").post(rateRestaurant)
+restaurantRouter.route("/getRatingOfRestaurant/:restaurantId").get(getRatingOfRestaurant)
+restaurantRouter.route("/allowRating").post(allowRating)
 
 export default restaurantRouter
