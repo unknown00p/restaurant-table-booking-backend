@@ -472,18 +472,17 @@ export const getRatingOfRestaurantService = async ({
         totalRatings: { $sum: 1 },
         reviews: {
           $push: {
-            restaurantId: "$restaurantId",
             userId: "$userId",
             ratingNumber: "$ratingNumber",
             ratingText: "$ratingText",
-            createdAt: "$createdAt"
-          }
-        }
+            createdAt: "$createdAt",
+          },
+        },
       },
     },
   ]);
 
-  return data
+  return data;
 };
 
 export const allowRatingService = async ({
@@ -508,8 +507,8 @@ export const allowRatingService = async ({
   });
 
   if (validBookings.length == 0) {
-    return false
+    return false;
   }
 
-  return true
+  return true;
 };
