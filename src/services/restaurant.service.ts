@@ -467,11 +467,12 @@ export const getRatingOfRestaurantService = async ({
     { $match: { restaurantId: new mongoose.Types.ObjectId(restaurantId) } },
     {
       $group: {
-        _id: "$restaurantId",
+        _id: "$_id",
         averageRating: { $avg: "$ratingNumber" },
         totalRatings: { $sum: 1 },
         reviews: {
           $push: {
+            restaurantId: "$restaurantId",
             userId: "$userId",
             ratingNumber: "$ratingNumber",
             ratingText: "$ratingText",
