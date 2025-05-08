@@ -8,7 +8,7 @@ export const verifyUser = asyncHandler(async (req: authorizedUser, _, next) => {
   try {
     const token =
       req.cookies?.accessToken ||
-      req.header("Authorization")?.replace("Bearer ", "");
+      req.get("Authorization")?.replace("Bearer ", "");
 
     if (!token) {
       throw new ApiError(400, "user unAuthorized");
