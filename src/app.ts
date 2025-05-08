@@ -17,6 +17,8 @@ const port = process.env.PORT || 3000;
   await db();
 })();
 
+app.use(cookieParser())
+
 app.use(
   cors({
     origin: ["https://beaker-0-v1.vercel.app","http://localhost:5173"],
@@ -26,7 +28,6 @@ app.use(
   })
 );
 
-app.use(cookieParser())
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
