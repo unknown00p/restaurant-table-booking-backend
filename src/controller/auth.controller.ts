@@ -127,6 +127,7 @@ export const resendOtp = asyncHandler(async (req: Request, res: Response) => {
 export const getCurrnentUser = asyncHandler(
   async (req: authorizedUser, res: Response) => {
     const userId = req?.user._id;
+    // console.log(req.user)
 
     const userData = await getCurrnentUserService({ userId: userId });
 

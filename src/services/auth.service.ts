@@ -4,6 +4,7 @@ import { User } from "../model/user.model";
 import { ApiError } from "../utils/apiError";
 import { generateOTP } from "../utils/otpGenrator";
 import jwt from "jsonwebtoken";
+import type { CookieOptions } from "express";
 
 // export const signInService = async ({
 //   email,
@@ -178,9 +179,10 @@ export const signInAndsignUpService = async ({
 
     const loggedInUser = await User.findById(user?._id).select("-password");
 
-    const cookieOption = {
-      secure: true,
+    const cookieOption: CookieOptions = {
       httpOnly: true,
+      secure: process.env.NODE_ENV == "production" ? true : false,
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     };
 
     return {
@@ -229,9 +231,10 @@ export const refreshAccessTokenService = async ({ incomingRefreshToken }) => {
 
   const newAccessToken = user.generateAccessToken();
 
-  const cookieOption = {
-    secure: true,
+  const cookieOption: CookieOptions = {
     httpOnly: true,
+    secure: process.env.NODE_ENV == "production" ? true : false,
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
   };
 
   return {
@@ -296,17 +299,17 @@ export const resendOtpService = async ({ userId }) => {
     throw new ApiError(405, "got error while creating otp in database");
   }
 };
+
 export const getCurrnentUserService = async ({ userId }) => {
   if (!userId) {
-    throw new ApiError(400, "user is unAuthorized")
+    throw new ApiError(400, "user is unAuthorized");
   }
 
-  const user = await User.findById(userId)
+  const user = await User.findById(userId);
 
-  if(!user){
-    throw new ApiError(400,"userId is incorrect")
+  if (!user) {
+    throw new ApiError(400, "userId is incorrect");
   }
 
-  return user
+  return user;
 };
-

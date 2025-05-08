@@ -6,7 +6,6 @@ import { authorizedUser } from "../types/user.type";
 
 export const verifyUser = asyncHandler(async (req: authorizedUser, _, next) => {
   try {
-    // console.log(req)
     const token =
       req.cookies?.accessToken ||
       req.header("Authorization")?.replace("Bearer ", "");

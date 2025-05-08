@@ -7,6 +7,7 @@ import authRouter from "./router/auth.router";
 import tableRouter from "./router/table.router";
 import restaurantRouter from "./router/restaurant.router";
 import bookingRouter from "./router/booking.router";
+import cookieParser from "cookie-parser"
 
 dotenv.config();
 
@@ -24,6 +25,8 @@ app.use(
     credentials: true,
   })
 );
+
+app.use(cookieParser())
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
