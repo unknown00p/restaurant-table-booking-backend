@@ -11,7 +11,10 @@ import {
   refreshAccessTokenService,
   resendOtpService,
   signInAndsignUpService,
+  getCurrnentUserService,
 } from "../services/auth.service";
+import { User } from "../model/user.model";
+import { ApiError } from "../utils/apiError";
 
 export const authCheck = asyncHandler(async (req: Request, res: Response) => {
   return res.status(200).json(new ApiResponse(200, "welcome to auth"));
@@ -61,9 +64,7 @@ export const signInAndSignUp = asyncHandler(
 
     return res
       .status(200)
-      .json(
-        new ApiResponse(200, `user signed up sucessfully`, userData)
-      );
+      .json(new ApiResponse(200, `user signed up sucessfully`, userData));
   }
 );
 
@@ -122,3 +123,13 @@ export const resendOtp = asyncHandler(async (req: Request, res: Response) => {
       new ApiResponse(200, "otp send successfully please check your email")
     );
 });
+
+export const getCurrnentUser = asyncHandler(
+  async (req: authorizedUser, res: Response) => {
+    const userId = req?.user._id;
+
+    const userData = await getCurrnentUserService({ userId: userId });
+
+    return res.status(200).json(new ApiResponse(200, "user founded", userData));
+  }
+);

@@ -296,3 +296,17 @@ export const resendOtpService = async ({ userId }) => {
     throw new ApiError(405, "got error while creating otp in database");
   }
 };
+export const getCurrnentUserService = async ({ userId }) => {
+  if (!userId) {
+    throw new ApiError(400, "user is unAuthorized")
+  }
+
+  const user = await User.findById(userId)
+
+  if(!user){
+    throw new ApiError(400,"userId is incorrect")
+  }
+
+  return user
+};
+
