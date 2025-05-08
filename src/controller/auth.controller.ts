@@ -45,17 +45,27 @@ export const authCheck = asyncHandler(async (req: Request, res: Response) => {
 //     .status(200)
 //     .json(new ApiResponse(200, "user Signed up sucessfully", user));
 // });
-export const signInAndSignUp = asyncHandler(async (req: Request, res: Response) => {
-  // get all the fields for sign up
-  const { email, password } = req.body;
-  const user = await signInAndsignUpService({ email, password });
+export const signInAndSignUp = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { email, password } = req.body;
+    const userData = await signInAndsignUpService({ email, password });
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, `user ${user.type} sucessfully`, user));
-});
+    if (userData.type == "signin") {
+      const { user, accessToken, refreshToken, cookieOption } = userData;
+      return res
+        .status(200)
+        .cookie("refreshToken", refreshToken, cookieOption)
+        .cookie("accessToken", accessToken, cookieOption)
+        .json(new ApiResponse(200, `user logged in sucessfully`, user));
+    }
 
-
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(200, `user signed up sucessfully`, userData)
+      );
+  }
+);
 
 export const signOut = asyncHandler(
   async (req: authorizedUser, res: Response) => {
