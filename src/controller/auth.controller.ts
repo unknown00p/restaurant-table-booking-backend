@@ -4,46 +4,58 @@ import { Request, Response } from "express";
 import { authorizedUser } from "../types/user.type";
 
 import {
-  signInService,
+  // signInService,
+  // signUpService,
   signOutService,
-  signUpService,
   otpConfirmationService,
   refreshAccessTokenService,
   resendOtpService,
+  signInAndsignUpService,
 } from "../services/auth.service";
 
 export const authCheck = asyncHandler(async (req: Request, res: Response) => {
   return res.status(200).json(new ApiResponse(200, "welcome to auth"));
 });
 
-export const signIn = asyncHandler(async (req: Request, res: Response) => {
-  const { email, password } = req.body;
+// export const signIn = asyncHandler(async (req: Request, res: Response) => {
+//   const { email, password } = req.body;
 
-  const { refreshToken, accessToken, loggedInUser, cookieOption } =
-    await signInService({ email, password });
+//   const { refreshToken, accessToken, loggedInUser, cookieOption } =
+//     await signInService({ email, password });
 
-  return res
-    .status(200)
-    .cookie("refreshToken", refreshToken, cookieOption)
-    .cookie("accessToken", accessToken, cookieOption)
-    .json(
-      new ApiResponse(200, "user logged in sucessfully", {
-        loggedInUser,
-        refreshToken,
-        accessToken,
-      })
-    );
-});
+//   return res
+//     .status(200)
+//     .cookie("refreshToken", refreshToken, cookieOption)
+//     .cookie("accessToken", accessToken, cookieOption)
+//     .json(
+//       new ApiResponse(200, "user logged in sucessfully", {
+//         loggedInUser,
+//         refreshToken,
+//         accessToken,
+//       })
+//     );
+// });
 
-export const signUp = asyncHandler(async (req: Request, res: Response) => {
+// export const signUp = asyncHandler(async (req: Request, res: Response) => {
+//   // get all the fields for sign up
+//   const { email, password } = req.body;
+//   const user = signUpService({ email, password });
+
+//   return res
+//     .status(200)
+//     .json(new ApiResponse(200, "user Signed up sucessfully", user));
+// });
+export const signInAndSignUp = asyncHandler(async (req: Request, res: Response) => {
   // get all the fields for sign up
   const { email, password } = req.body;
-  const user = signUpService({ email, password });
+  const user = await signInAndsignUpService({ email, password });
 
   return res
     .status(200)
-    .json(new ApiResponse(200, "user Signed up sucessfully", user));
+    .json(new ApiResponse(200, `user ${user.type} sucessfully`, user));
 });
+
+
 
 export const signOut = asyncHandler(
   async (req: authorizedUser, res: Response) => {
