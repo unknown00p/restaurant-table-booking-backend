@@ -16,4 +16,7 @@ export interface UserSchemaTypes {
 
 export interface authorizedUser extends Request {
   user?:  HydratedDocument<UserSchemaTypes>;
+  cookies: {
+    [key: string]: string;
+  };
 }
