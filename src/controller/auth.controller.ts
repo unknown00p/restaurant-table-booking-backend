@@ -4,8 +4,6 @@ import { Request, Response } from "express";
 import { authorizedUser } from "../types/user.type";
 
 import {
-  // signInService,
-  // signUpService,
   signOutService,
   otpConfirmationService,
   refreshAccessTokenService,
@@ -13,8 +11,6 @@ import {
   signInAndsignUpService,
   getCurrnentUserService,
 } from "../services/auth.service";
-import { User } from "../model/user.model";
-import { ApiError } from "../utils/apiError";
 
 export const authCheck = asyncHandler(async (req: Request, res: Response) => {
   return res.status(200).json(new ApiResponse(200, "welcome to auth"));
@@ -54,17 +50,21 @@ export const signInAndSignUp = asyncHandler(
     const userData = await signInAndsignUpService({ email, password });
 
     if (userData.type == "signin") {
-      const { user, accessToken, refreshToken, cookieOption } = userData;
+      const { type, user, accessToken, refreshToken, cookieOption } = userData;
       return res
         .status(200)
         .cookie("refreshToken", refreshToken, cookieOption)
         .cookie("accessToken", accessToken, cookieOption)
-        .json(new ApiResponse(200, `user logged in sucessfully`, user));
+        .json(
+          new ApiResponse(200, `user logged in sucessfully`, { user, type })
+        );
     }
+
+    const { type, user } = userData;
 
     return res
       .status(200)
-      .json(new ApiResponse(200, `user signed up sucessfully`, userData));
+      .json(new ApiResponse(200, `user signed up sucessfully`, { user, type }));
   }
 );
 
@@ -104,10 +104,13 @@ export const otpConfirmation = asyncHandler(
     // yet to write
     const { userId, otp } = req.body;
 
-    const user = await otpConfirmationService({ userId, otp });
+    const { user, accessToken, refreshToken, cookieOption } =
+      await otpConfirmationService({ userId, otp });
 
     return res
       .status(200)
+      .cookie("refreshToken", refreshToken, cookieOption)
+      .cookie("accessToken", accessToken, cookieOption)
       .json(new ApiResponse(200, "user authorized sucessfully", user));
   }
 );
@@ -127,6 +130,17 @@ export const resendOtp = asyncHandler(async (req: Request, res: Response) => {
 export const getCurrnentUser = asyncHandler(
   async (req: authorizedUser, res: Response) => {
     const userId = req?.user._id;
+    // console.log(req.user)
+
+    const userData = await getCurrnentUserService({ userId: userId });
+
+    return res.status(200).json(new ApiResponse(200, "user founded", userData));
+  }
+);
+
+export const getUserById = asyncHandler(
+  async (req: authorizedUser, res: Response) => {
+    const userId = req.body;
     // console.log(req.user)
 
     const userData = await getCurrnentUserService({ userId: userId });

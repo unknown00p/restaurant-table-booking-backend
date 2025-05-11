@@ -112,6 +112,41 @@ import type { CookieOptions } from "express";
 //   return user;
 // };
 
+// export const signInAndsignUpService = async ({
+//   email,
+//   password,
+// }: {
+//   email: string;
+//   password: string;
+// }) => {
+//   if (!email || !password) {
+//     throw new ApiError(400, "all fields are required");
+//   }
+//   const isUser = await User.findOne({ email });
+
+//   if (!isUser) {
+//     const res = await signUpService({ email, password });
+
+//     return {
+//       type: "signup",
+//       user: res,
+//     };
+//   }
+
+//   if (isUser && !isUser.emailVerified) {
+//     throw new ApiError(400, "user is unAuthorized please authorize first");
+//   }
+
+//   const res = await signInService({ email, password });
+//   return {
+//     type: "signin",
+//     cookieOption: res.cookieOption,
+//     refreshToken: res.refreshToken,
+//     accessToken: res.accessToken,
+//     user: res.loggedInUser,
+//   };
+// };
+
 export const signInAndsignUpService = async ({
   email,
   password,
@@ -166,7 +201,13 @@ export const signInAndsignUpService = async ({
   }
 
   if (isUser && !isUser.emailVerified) {
-    throw new ApiError(400, "user is unAuthorized please authorize first");
+    const res = await resendOtpService({userId: isUser?._id})
+
+    return {
+      type: "verify",
+      message: res.message,
+      user: isUser,
+    };
   } else {
     const checkPassValid = await user.isPasswordCorrect(password);
 
@@ -270,7 +311,21 @@ export const otpConfirmationService = async ({ userId, otp }) => {
 
   await Otp.findOneAndDelete({ userId });
 
-  return user;
+  const refreshToken = await user.generateRefreshToken();
+  const accessToken = await user.generateAccessToken();
+
+  const cookieOption: CookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV == "production" ? true : false,
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  };
+
+  return {
+    user,
+    refreshToken,
+    accessToken,
+    cookieOption,
+  };
 };
 
 export const resendOtpService = async ({ userId }) => {
@@ -298,9 +353,27 @@ export const resendOtpService = async ({ userId }) => {
   if (!createOtp) {
     throw new ApiError(405, "got error while creating otp in database");
   }
+
+  return {
+    message: 'otp sended successfully'
+  }
 };
 
 export const getCurrnentUserService = async ({ userId }) => {
+  if (!userId) {
+    throw new ApiError(400, "user is unAuthorized");
+  }
+
+  const user = await User.findById(userId);
+
+  if (!user) {
+    throw new ApiError(400, "userId is incorrect");
+  }
+
+  return user;
+};
+
+export const getUserByIdService = async ({ userId }) => {
   if (!userId) {
     throw new ApiError(400, "user is unAuthorized");
   }

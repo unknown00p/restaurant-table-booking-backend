@@ -9,6 +9,7 @@ import {
   resendOtp,
   signInAndSignUp,
   getCurrnentUser,
+  getUserById,
 } from "../controller/auth.controller";
 import { verifyUser } from "../middleware/user.middleware";
 
@@ -23,5 +24,6 @@ authRouter.route("/otpConfirmation").post(otpConfirmation);
 authRouter.route("/refreshAccessToken").post(refreshAccessToken);
 authRouter.route("/resendOtp").post(resendOtp);
 authRouter.route("/getCurrnentUser").get(verifyUser, getCurrnentUser);
+authRouter.route("/getUserById").get(verifyUser, getUserById);
 
 export default authRouter;
