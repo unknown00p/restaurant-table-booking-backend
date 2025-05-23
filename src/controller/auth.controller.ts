@@ -140,7 +140,7 @@ export const getCurrnentUser = asyncHandler(
 
 export const getUserById = asyncHandler(
   async (req: authorizedUser, res: Response) => {
-    const userId = req.body;
+    const userId = req.user.id;
     // console.log(req.user)
 
     const userData = await getCurrnentUserService({ userId: userId });
