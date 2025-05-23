@@ -19,6 +19,7 @@ import { TableBooking } from "../model/tableBooking.model";
 import { uploadToImageKit } from "../utils/imageUpload";
 import { RestaurantRating } from "../model/restaurantRating";
 import mongoose from "mongoose";
+import { getRatingOfRestaurant } from "../controller/restaurant.controller";
 
 export const searchWithAvailabilityService = async ({
   searchTerm,
@@ -80,7 +81,7 @@ export const searchWithAvailabilityService = async ({
     return 150;
   };
 
-  const timeSlots = genrateNearbySlots(convertedTime);
+  const timeSlots = genrateNearbySlots(convertedTime,convertedDate);
 
   const restaurants = await Promise.all(
     opendRestaurant.map(async (data) => {
@@ -179,13 +180,34 @@ export const searchWithAvailabilityService = async ({
           });
         }
       }
+
+      const resRating = await RestaurantRating.aggregate([
+        { $match: { restaurantId: new mongoose.Types.ObjectId(data._id) } },
+        {
+          $group: {
+            _id: "$_id",
+            averageRating: { $avg: "$ratingNumber" },
+            totalRatings: { $sum: 1 },
+          },
+        },
+      ]);
+
       return {
-        restaurantId: data._id,
+        id: data._id,
         name: data.name,
         mainImage: data.mainImage,
-        availableSlots,
+        availableSlots: availableSlots.map((slots) => ({
+          time: slots.time,
+          availableTableId: slots.tables.map((table) => table._id),
+        })),
         cuisines: data.cuisines,
-        area: data.location.area,
+        location: data.location,
+        openTime: data.openTime,
+        closeTime: data.closeTime,
+        resRating: resRating.map((rating) => ({
+          totalRatings: rating.totalRatings,
+          averageRating: rating.averageRating,
+        })),
       };
     })
   );
@@ -441,10 +463,11 @@ export const rateRestaurantService = async ({
     throw new ApiError(402, "you are not allowed to rate");
   }
 
+  // if userId and restaurantId is same update the existing rating
   const updatedOrCreatedRating = await RestaurantRating.findOneAndUpdate(
     { restaurantId, userId },
-    { $set: { ratingNumber, ratingText } },
-    { upsert: true, new: true, runValidators: true }
+    { ratingNumber, ratingText },
+    { new: true, upsert: true }
   );
 
   if (!updatedOrCreatedRating) {

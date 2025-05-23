@@ -13,6 +13,18 @@ import {
   isValidTime,
 } from "../utils/formateDateTime";
 import { BookingCancelation } from "../model/bookingCancelation.model";
+import { LockBooking } from "../model/lockBooking.model";
+
+function groupBy<T>(
+  array: T[],
+  keyFn: (item: T) => string
+): Record<string, T[]> {
+  return array.reduce((result, item) => {
+    const key = keyFn(item);
+    (result[key] ||= []).push(item);
+    return result;
+  }, {} as Record<string, T[]>);
+}
 
 export const bookTableService = async ({
   restaurantId,
@@ -172,7 +184,190 @@ export const bookTableService = async ({
     newBooking,
     tableBooking,
   };
+};
 
+export const lockTableForBookingService = async ({
+  restaurantId,
+  userId,
+  tableId,
+}) => {
+  if (!restaurantId || !userId || !tableId) {
+    throw new ApiError(404, "all fields are required");
+  }
+
+  const locked = await LockBooking.create({
+    restaurantId,
+    tableId,
+    userId,
+  });
+
+  if (!locked) {
+    throw new ApiError(401, "got error while locking the table");
+  }
+
+  return locked;
+};
+
+export const unLockTableForBookingService = async ({ userId, tableId }) => {
+  if (!userId || !tableId) {
+    throw new ApiError(404, "all fields are required");
+  }
+
+  const unLocked = await LockBooking.findOneAndDelete({ userId, tableId });
+
+  // if (!unLocked) {
+  //   throw new ApiError(401, "got error while unLocking the table");
+  // }
+
+  return unLocked;
+};
+
+export const selectDineLocationService = async ({
+  restaurantId,
+  people,
+  reservationDate,
+  reservationTime,
+}) => {
+  if (!restaurantId || !people || !reservationDate || !reservationTime) {
+    throw new ApiError(404, "all fields are required");
+  }
+
+  let formattedReservationTime = reservationTime;
+
+  if (!isValidTime(reservationTime)) {
+    const converted = convertTo24Hour(reservationTime);
+    if (!converted) {
+      throw new ApiError(400, "Invalid time format");
+    }
+
+    formattedReservationTime = converted;
+  }
+
+  const convertedDate = convertStringToDate(reservationDate);
+
+  const restaurant = await Restaurant.findById(restaurantId);
+
+  if (!restaurant) {
+    throw new ApiError(404, "restaurant with this id does not exists");
+  }
+
+  const getBookingDuration = (guests: number) => {
+    if (guests <= 2) return 60;
+    if (guests <= 4) return 90;
+    if (guests <= 8) return 120;
+    return 150;
+  };
+
+  const timeToStay = getBookingDuration(Number(people));
+  const reservationEnd = addMinutesToTime(formattedReservationTime, timeToStay);
+
+  const reservationStartDateTime = combineDateAndTime(
+    String(convertedDate),
+    formattedReservationTime
+  );
+
+  const restaurantClosingDateTime = combineDateAndTime(
+    String(convertedDate),
+    restaurant.closeTime
+  );
+
+  const reservationEndDateTime = combineDateAndTime(
+    String(convertedDate),
+    reservationEnd
+  );
+
+  if (reservationEndDateTime > restaurantClosingDateTime) {
+    throw new ApiError(
+      404,
+      "table for that time in this restaurant is not available"
+    );
+  }
+
+  const matchedTablesIds = await Booking.aggregate([
+    {
+      $match: {
+        restaurantId,
+        reservationStartDateTime: { $lt: reservationEndDateTime },
+        reservationEndDateTime: { $gt: reservationStartDateTime },
+      },
+    },
+    {
+      $lookup: {
+        from: "tablebookings",
+        localField: "_id",
+        foreignField: "bookingId",
+        as: "matchedBookingTables",
+      },
+    },
+    {
+      $project: {
+        tableIds: {
+          $map: {
+            input: "$matchedBookingTables",
+            as: "table",
+            in: "$$table.tableId",
+          },
+        },
+      },
+    },
+  ]);
+
+  const tableIds = matchedTablesIds.flat().map((id) => {
+    return id.toString();
+  });
+
+  const tables = await Table.find({ restaurantId });
+
+  const filterdTables = tables.filter(
+    ({ _id }) => !tableIds.includes(_id.toString())
+  );
+
+  let shortedTables = filterdTables.filter((data) => data.capacity >= people);
+
+  let smallest = Number.MAX_VALUE;
+  let matchedTables = [];
+
+  if (shortedTables.length !== 0) {
+    for (let i = 0; i < shortedTables.length; i++) {
+      if (smallest === shortedTables[i].capacity) {
+        smallest = shortedTables[i].capacity;
+        matchedTables.push(shortedTables[i]);
+      } else if (smallest > shortedTables[i].capacity) {
+        matchedTables = [];
+        smallest = shortedTables[i].capacity;
+        matchedTables.push(shortedTables[i]);
+      }
+    }
+  } else {
+    if (shortedTables.length == 0) {
+      shortedTables = filterdTables.filter((data) => data.capacity < people);
+    }
+  }
+
+  const m = await LockBooking.find({ restaurantId });
+
+  const lockedTableIds = new Set(m.map((lock) => lock.tableId?.toString()));
+
+  const filteredTablesByLock = matchedTables.filter(
+    (table) => !lockedTableIds.has(table._id.toString())
+  );
+
+  // console.log(filteredTablesByLock);
+
+  // if (matchedTables.length == 0) {
+  //   console.log("shortedTables", shortedTables);
+  //   // Todo --> mearge multiple tables and to fulfill the requirement of the larger party and even after merging the tables if requerment not meets send a message that the
+  // }
+
+  const tableGroups = groupBy(filteredTablesByLock, ({ location }) => location);
+  const tableGroupsArray = Object.entries(tableGroups).map(
+    ([location, tables]) => ({
+      location,
+      tables,
+    })
+  );
+  // console.log("tableGroupsArray", tableGroupsArray);
+  return tableGroupsArray;
 };
 
 export const getBookingDetailsByIdService = async (bookingId: string) => {

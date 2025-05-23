@@ -61,9 +61,18 @@ const addMinutesToTime = (timeStr: string, minutesToAdd: number) => {
   return `${newHour}:${newMinute}`;
 };
 
-const genrateNearbySlots = (timeStr: string) => {
+const genrateNearbySlots = (timeStr: string, date: Date) => {
+  const [hour, minute] = timeStr.split(":").map(Number);
+  date.setHours(hour, minute, 0, 0);
+  const currentDate = new Date();
+  const isSameDay =
+    currentDate.getFullYear() === date.getFullYear() &&
+    currentDate.getMonth() === date.getMonth() &&
+    currentDate.getDate() === date.getDate() &&
+    currentDate.getHours() === date.getHours()
+
+  let offsets = isSameDay ? [0, 30, 60] : [-30, 0, 30];
   const slots = [];
-  const offsets = [-60, -30, 0, 30, 60];
 
   for (const offset of offsets) {
     const time = addMinutesToTime(timeStr, offset);
