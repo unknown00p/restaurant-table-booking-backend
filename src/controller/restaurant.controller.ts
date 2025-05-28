@@ -2,6 +2,7 @@ import { Response, Request, RequestHandler } from "express";
 import { asyncHandler } from "../utils/asyncHandler";
 import { ApiResponse } from "../utils/apiResponse";
 import { authorizedUser } from "../types/user.type";
+
 import {
   addRestaurantService,
   allowRatingService,
@@ -15,7 +16,7 @@ import {
 } from "../services/restaurant.service";
 
 export const addRestaurant = asyncHandler(
-  async (req: authorizedUser, res: Response) => {
+  async (req: Request, res: Response) => {
     const { name, city, area, cuisines, numberOfTables, openTime, closeTime } =
       req.body;
 
