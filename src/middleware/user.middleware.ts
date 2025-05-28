@@ -4,7 +4,7 @@ import { asyncHandler } from "../utils/asyncHandler";
 import jwt from "jsonwebtoken";
 import { authorizedUser } from "../types/user.type";
 
-export const verifyUser = asyncHandler(async (req: authorizedUser, _, next) => {
+export const verifyUser = asyncHandler(async (req:authorizedUser, _, next) => {
   try {
     const token =
       req.cookies?.accessToken ||

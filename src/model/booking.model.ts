@@ -24,6 +24,11 @@ const BookingSchema = new mongoose.Schema(
         required: true
     },
 
+    partySize: {
+        type: Number,
+        required: true
+    },
+
     reservationStatus: {
         type: String,
         enum: ["pending","confirmed","cancled"],

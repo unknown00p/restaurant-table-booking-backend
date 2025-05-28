@@ -28,12 +28,19 @@ function groupBy<T>(
 
 export const bookTableService = async ({
   restaurantId,
-  people,
+  tableId,
   reservationDate,
   reservationTime,
   userId,
+  partySize,
 }: bookingDataType) => {
-  if (!restaurantId || !people || !reservationDate || !reservationTime) {
+  if (
+    !restaurantId ||
+    !reservationDate ||
+    !reservationTime ||
+    !userId ||
+    !partySize
+  ) {
     throw new ApiError(404, "all fields are required");
   }
 
@@ -63,7 +70,7 @@ export const bookTableService = async ({
     return 150;
   };
 
-  const timeToStay = getBookingDuration(Number(people));
+  const timeToStay = getBookingDuration(Number(partySize));
   const reservationEnd = addMinutesToTime(formattedReservationTime, timeToStay);
 
   const reservationStartDateTime = combineDateAndTime(
@@ -71,100 +78,20 @@ export const bookTableService = async ({
     formattedReservationTime
   );
 
-  const restaurantClosingDateTime = combineDateAndTime(
-    String(convertedDate),
-    restaurant.closeTime
-  );
-
   const reservationEndDateTime = combineDateAndTime(
     String(convertedDate),
     reservationEnd
   );
 
-  if (reservationEndDateTime > restaurantClosingDateTime) {
-    throw new ApiError(
-      404,
-      "table for that time in this restaurant is not available"
-    );
-  }
-
-  // console.table([restaurantId,convertedDate,reservationEnd,formattedReservationTime])
-  // console.log(convertedDate)
-
-  const matchedTablesIds = await Booking.aggregate([
-    {
-      $match: {
-        restaurantId,
-        reservationStartDateTime: { $lt: reservationEndDateTime },
-        reservationEndDateTime: { $gt: reservationStartDateTime },
-      },
-    },
-    {
-      $lookup: {
-        from: "tablebookings",
-        localField: "_id",
-        foreignField: "bookingId",
-        as: "matchedBookingTables",
-      },
-    },
-    {
-      $project: {
-        tableIds: {
-          $map: {
-            input: "$matchedBookingTables",
-            as: "table",
-            in: "$$table.tableId",
-          },
-        },
-      },
-    },
-  ]);
-
-  // console.log("matchedTablesIds", matchedTablesIds);
-
-  const tableIds = matchedTablesIds.flat().map((id) => {
-    return id.toString();
+  const duplicateBooking = await Booking.findOne({
+    restaurantId,
+    userId,
+    reservationStartDateTime,
   });
 
-  const tables = await Table.find({ restaurantId });
-
-  const filterdTables = tables.filter(
-    ({ _id }) => !tableIds.includes(_id.toString())
-  );
-
-  let shortedTables = filterdTables.filter((data) => data.capacity >= people);
-  // console.log("shortedTables", shortedTables);
-
-  let smallest = Number.MAX_VALUE;
-  let matchedTables = [];
-
-  if (shortedTables.length !== 0) {
-    for (let i = 0; i < shortedTables.length; i++) {
-      if (smallest === shortedTables[i].capacity) {
-        smallest = shortedTables[i].capacity;
-        matchedTables.push(shortedTables[i]);
-      } else if (smallest > shortedTables[i].capacity) {
-        matchedTables = [];
-        smallest = shortedTables[i].capacity;
-        matchedTables.push(shortedTables[i]);
-      }
-    }
-  } else {
-    if (shortedTables.length == 0) {
-      shortedTables = filterdTables.filter((data) => data.capacity < people);
-    }
+  if (duplicateBooking) {
+    throw new ApiError(409, "You have already booked a table at this time.");
   }
-
-  // if (matchedTables.length == 0) {
-  //   console.log("shortedTables", shortedTables);
-  //   // Todo --> mearge multiple tables and to fulfill the requirement of the larger party and even after merging the tables if requerment not meets send a message that the
-  // }
-
-  const randomTable =
-    matchedTables[Math.floor(Math.random() * matchedTables.length)];
-
-  // console.log("matchedTables", matchedTables);
-  // console.log("randomTable", randomTable);
 
   const newBooking = await Booking.create({
     restaurantId,
@@ -172,10 +99,11 @@ export const bookTableService = async ({
     reservationEndDateTime,
     userId,
     reservationStatus: "confirmed",
+    partySize,
   });
 
   const tableBooking = await TableBooking.create({
-    tableId: randomTable._id,
+    tableId,
     bookingId: newBooking._id,
     restaurantId,
   });

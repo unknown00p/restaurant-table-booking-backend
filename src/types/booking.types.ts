@@ -1,7 +1,8 @@
 export type bookingDataType = {
   restaurantId?: string;
-  people?: number;
+  tableId: string;
   reservationDate?: string;
   reservationTime?: string;
   userId?: string;
+  partySize: number;
 };

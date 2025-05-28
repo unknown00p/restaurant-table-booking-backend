@@ -12,7 +12,7 @@ import {
 
 const bookingRouter = Router();
 
-bookingRouter.route("/").post(bookTable);
+bookingRouter.route("/bookTable").post(verifyUser,bookTable);
 bookingRouter.route("/selectDineLocation").post(selectDineLocation);
 bookingRouter
   .route("/reserveTableForBooking")

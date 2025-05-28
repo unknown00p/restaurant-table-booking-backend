@@ -11,8 +11,19 @@ import {
   unLockTableForBookingService,
 } from "../services/booking.service";
 
-export const bookTable = asyncHandler(async (req, res) => {
-  const { tableBooking, newBooking } = await bookTableService(req.body);
+export const bookTable = asyncHandler(async (req: authorizedUser, res) => {
+  const { restaurantId, tableId, reservationDate, reservationTime, partySize } =
+    req.body;
+
+  const userId = req?.user.id;
+  const { tableBooking, newBooking } = await bookTableService({
+    restaurantId,
+    tableId,
+    reservationDate,
+    reservationTime,
+    partySize,
+    userId
+  });
 
   res.status(201).json(
     new ApiResponse(201, "Table booked successfully", {
@@ -52,15 +63,17 @@ export const lockTableForBooking = asyncHandler(
   }
 );
 
-export const unLockTableForBooking = asyncHandler(async (req:authorizedUser, res) => {
-  const { tableId } = req.body;
-  const userId = req.user.id
-  const locked = await unLockTableForBookingService({tableId,userId});
+export const unLockTableForBooking = asyncHandler(
+  async (req: authorizedUser, res) => {
+    const { tableId } = req.body;
+    const userId = req.user.id;
+    const locked = await unLockTableForBookingService({ tableId, userId });
 
-  res
-    .status(201)
-    .json(new ApiResponse(201, "Table unLocked successfully", locked));
-});
+    res
+      .status(201)
+      .json(new ApiResponse(201, "Table unLocked successfully", locked));
+  }
+);
 
 export const getBookingDetailsById = asyncHandler(async (req, res) => {
   const { bookingId } = req.params;
