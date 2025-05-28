@@ -4,7 +4,7 @@ import { asyncHandler } from "../utils/asyncHandler";
 import jwt from "jsonwebtoken";
 import { authorizedUser } from "../types/user.type";
 
-export const verifyUser = asyncHandler(async (req:authorizedUser, _, next) => {
+export const verifyUser = asyncHandler(async (req: authorizedUser, _, next) => {
   try {
     const token =
       req.cookies?.accessToken ||
@@ -14,9 +14,12 @@ export const verifyUser = asyncHandler(async (req:authorizedUser, _, next) => {
       throw new ApiError(400, "user unAuthorized");
     }
 
-    const verifyToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    const verifyToken = jwt.verify(
+      token,
+      process.env.ACCESS_TOKEN_SECRET!
+    ) as { _id: string };
 
-    const user = await User.findById(verifyToken?._id);
+    const user = await User.findById(verifyToken._id);
 
     if (!user) {
       throw new ApiError(404, "token is invalid");
@@ -24,7 +27,7 @@ export const verifyUser = asyncHandler(async (req:authorizedUser, _, next) => {
 
     req.user = user;
     next();
-  } catch (error) {
+  } catch (error: any) {
     throw new ApiError(401, error?.message || "Invalid access token");
   }
 });
