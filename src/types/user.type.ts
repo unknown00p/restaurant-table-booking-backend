@@ -14,7 +14,7 @@ export interface UserSchemaTypes {
   generateAccessToken(): string;
 }
 
-export interface authorizedUser extends Request {
-  cookies: { [key: string]: string };
+export type authorizedUser = Request & {
   user?: HydratedDocument<UserSchemaTypes>;
-}
+  cookies: { [key: string]: string };
+};
