@@ -222,8 +222,8 @@ export const signInAndsignUpService = async ({
 
     const cookieOption: CookieOptions = {
       httpOnly: true,
-      secure: process.env.NODE_ENV == "production" ? true : false,
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      secure: process.env.NODE_ENV == "development" ? true : false,
+      sameSite: process.env.NODE_ENV === "development" ? "none" : "lax",
     };
 
     return {
@@ -274,8 +274,8 @@ export const refreshAccessTokenService = async ({ incomingRefreshToken }) => {
 
   const cookieOption: CookieOptions = {
     httpOnly: true,
-    secure: process.env.NODE_ENV == "production" ? true : false,
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    secure: process.env.NODE_ENV == "development" ? true : false,
+    sameSite: process.env.NODE_ENV === "development" ? "none" : "lax",
   };
 
   return {
@@ -316,8 +316,8 @@ export const otpConfirmationService = async ({ userId, otp }) => {
 
   const cookieOption: CookieOptions = {
     httpOnly: true,
-    secure: process.env.NODE_ENV == "production" ? true : false,
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    secure: process.env.NODE_ENV == "development" ? true : false,
+    sameSite: process.env.NODE_ENV === "development" ? "none" : "lax",
   };
 
   return {
