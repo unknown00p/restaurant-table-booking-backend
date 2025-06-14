@@ -27,6 +27,12 @@ function groupBy<T>(
 }
 
 export const bookTableService = async ({
+  firstName,
+  lastName,
+  email,
+  phone,
+  SpecialOccasion,
+  AccessibilityNeeds,
   restaurantId,
   tableId,
   reservationDate,
@@ -94,6 +100,12 @@ export const bookTableService = async ({
   }
 
   const newBooking = await Booking.create({
+    firstName,
+    lastName,
+    email,
+    phone,
+    SpecialOccasion,
+    AccessibilityNeeds,
     restaurantId,
     reservationStartDateTime,
     reservationEndDateTime,
@@ -354,7 +366,7 @@ export const cancelBookingService = async ({
 
   const cancelHistory = await BookingCancelation.create({
     bookingId: bookingId,
-    canceledBy: bookingDetail.userId,
+    cancelled: bookingDetail.userId,
     reason,
   });
 

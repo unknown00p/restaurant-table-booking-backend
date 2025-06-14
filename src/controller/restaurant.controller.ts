@@ -17,8 +17,18 @@ import {
 
 export const addRestaurant = asyncHandler(
   async (req: Request, res: Response) => {
-    const { name, city, area, cuisines, numberOfTables, openTime, closeTime } =
-      req.body;
+    const {
+      name,
+      cuisines,
+      numberOfTables,
+      openTime,
+      closeTime,
+      policies,
+      "location.city": city,
+      "location.area": area,
+      "perPersonPrice.price": price,
+      "perPersonPrice.minimumDeposite": minimumDeposite,
+    } = req.body;
 
     const { mainImage, subImages } = req.files as {
       [fieldname: string]: Express.Multer.File[];
@@ -33,13 +43,17 @@ export const addRestaurant = asyncHandler(
 
     const restaurant = await addRestaurantService({
       name,
-      location,
+      city,
+      area,
       cuisines,
       numberOfTables: numberOfTablesConverted,
       openTime,
       closeTime,
       mainImage,
       subImages,
+      price: Number(price),
+      minimumDeposite: Number(minimumDeposite),
+      policies,
     });
 
     res
@@ -81,7 +95,8 @@ export const updateCuisine = asyncHandler(
 
 export const removeRestaurant = asyncHandler(
   async (req: authorizedUser, res: Response) => {
-    const deleteRestaurant = await removeRestaurantService(req.body);
+    const { restaurantId } = req.params;
+    const deleteRestaurant = await removeRestaurantService({ restaurantId });
 
     res
       .status(200)

@@ -81,7 +81,7 @@ export const searchWithAvailabilityService = async ({
     return 150;
   };
 
-  const timeSlots = genrateNearbySlots(convertedTime,convertedDate);
+  const timeSlots = genrateNearbySlots(convertedTime, convertedDate);
 
   const restaurants = await Promise.all(
     opendRestaurant.map(async (data) => {
@@ -172,6 +172,9 @@ export const searchWithAvailabilityService = async ({
             );
           }
         }
+        console.log(matchedTables.length)
+        console.log(timeSlot)
+        console.log(matchedTables)
 
         if (matchedTables.length > 0) {
           availableSlots.push({
@@ -217,23 +220,31 @@ export const searchWithAvailabilityService = async ({
 
 export const addRestaurantService = async ({
   name,
-  location,
+  city,
+  area,
   cuisines,
   numberOfTables,
   openTime,
   closeTime,
   mainImage,
   subImages,
+  minimumDeposite,
+  price,
+  policies
 }: restaurantInputType) => {
+
   if (
-    typeof name !== "string" ||
-    typeof location !== "object" ||
-    typeof location.city !== "string" ||
-    typeof location.area !== "string" ||
-    !Array.isArray(cuisines) ||
-    typeof numberOfTables !== "number" ||
-    typeof openTime !== "string" ||
-    typeof closeTime !== "string"
+    (typeof name !== "string" ||
+      typeof city !== "string" ||
+      typeof area !== "string" ||
+      !Array.isArray(cuisines) ||
+      typeof numberOfTables !== "number" ||
+      typeof openTime !== "string" ||
+      typeof closeTime !== "string" ||
+      typeof minimumDeposite !== "number" ||
+      typeof price !== "number" ||
+      !Array.isArray(policies)
+  )
   ) {
     throw new ApiError(404, "all feilds are required");
   }
@@ -248,7 +259,7 @@ export const addRestaurantService = async ({
 
   const restaurant = await Restaurant.findOne({ name });
 
-  if (restaurant && restaurant.location.area == location.area) {
+  if (restaurant && restaurant.location.area == area) {
     throw new ApiError(
       400,
       "restaurant with same name and location already exists"
@@ -286,8 +297,8 @@ export const addRestaurantService = async ({
   const addedRestaurant = await Restaurant.create({
     name: name.trim().toLowerCase(),
     location: {
-      city: location.city.trim().toLowerCase(),
-      area: location.area.trim().toLowerCase(),
+      city: city.trim().toLowerCase(),
+      area: area.trim().toLowerCase(),
     },
     cuisines: cuisines.map((cuisine) => cuisine.trim().toLowerCase()),
     numberOfTables,
@@ -295,6 +306,11 @@ export const addRestaurantService = async ({
     closeTime: formattedCloseTime,
     mainImage: mainImageRes[0].url,
     subImages: subImagesUrl,
+    policies,
+    perPersonPrice:{
+      price: Number(price),
+      minimumDeposite: Number(minimumDeposite)
+    }
   });
 
   if (!addedRestaurant) {

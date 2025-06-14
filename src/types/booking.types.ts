@@ -1,4 +1,10 @@
 export type bookingDataType = {
+  firstName:string;
+  lastName:string;
+  email:string;
+  phone:number;
+  SpecialOccasion?:string;
+  AccessibilityNeeds?:string;
   restaurantId?: string;
   tableId: string;
   reservationDate?: string;

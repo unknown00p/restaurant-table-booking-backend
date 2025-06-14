@@ -72,9 +72,9 @@ export const signOut = asyncHandler(
   async (req: authorizedUser, res: Response) => {
     // yet to write
     const userId = req?.user._id;
-    const cookieOptions = await signOutService(userId);
-    res
-      .send(200)
+    const cookieOptions = await signOutService(userId);;
+    return res
+      .status(200)
       .clearCookie("accessToken", cookieOptions)
       .clearCookie("refreshToken", cookieOptions)
       .json(new ApiResponse(200, "user logged out successfully"));

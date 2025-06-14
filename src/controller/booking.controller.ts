@@ -12,17 +12,34 @@ import {
 } from "../services/booking.service";
 
 export const bookTable = asyncHandler(async (req: authorizedUser, res) => {
-  const { restaurantId, tableId, reservationDate, reservationTime, partySize } =
-    req.body;
-
-  const userId = req?.user.id;
-  const { tableBooking, newBooking } = await bookTableService({
+  const {
     restaurantId,
     tableId,
     reservationDate,
     reservationTime,
     partySize,
-    userId
+    firstName,
+    lastName,
+    email,
+    phone,
+    SpecialOccasion,
+    AccessibilityNeeds,
+  } = req.body;
+
+  const userId = req?.user.id;
+  const { tableBooking, newBooking } = await bookTableService({
+    firstName,
+    lastName,
+    email,
+    phone,
+    SpecialOccasion,
+    AccessibilityNeeds,
+    restaurantId,
+    tableId,
+    reservationDate,
+    reservationTime,
+    partySize,
+    userId,
   });
 
   res.status(201).json(

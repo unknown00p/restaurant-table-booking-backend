@@ -12,7 +12,7 @@ const RestaurantSchema = new mongoose.Schema(
       required: true,
     },
 
-    subImages: { type: [String] },
+    subImages: { type: [String], default: [] },
 
     location: {
       city: {
@@ -42,10 +42,35 @@ const RestaurantSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    policies: {
+      type: [
+        {
+          type: String,
+          maxlength: 50,
+        },
+      ],
+      validate: [arrayLimit, "{PATH} exceeds the limit of 10"],
+      required: true,
+    },
+
+    perPersonPrice: {
+      price: {
+        type: Number,
+        required: true,
+      },
+      minimumDeposite: {
+        type: Number,
+        required: true,
+      },
+    },
   },
   {
     timestamps: true,
   }
 );
+
+function arrayLimit(value: string[]) {
+  return value.length <= 10;
+}
 
 export const Restaurant = mongoose.model("Restaurant", RestaurantSchema);
