@@ -149,7 +149,7 @@ import type { CookieOptions } from "express";
 
 export const signInAndsignUpService = async ({
   email,
-  password,
+  password
 }: {
   email: string;
   password: string;
@@ -164,7 +164,7 @@ export const signInAndsignUpService = async ({
     user = await User.create({
       email,
       password,
-      emailVerified: false,
+      emailVerified: false
     });
 
     if (!user) {

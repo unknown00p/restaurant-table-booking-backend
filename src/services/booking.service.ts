@@ -96,7 +96,7 @@ export const bookTableService = async ({
   });
 
   if (duplicateBooking) {
-    throw new ApiError(409, "You have already booked a table at this time.");
+    throw new ApiError(409, "You have already booked a table at this time for this restaurant.");
   }
 
   const newBooking = await Booking.create({
@@ -292,13 +292,6 @@ export const selectDineLocationService = async ({
     (table) => !lockedTableIds.has(table._id.toString())
   );
 
-  // console.log(filteredTablesByLock);
-
-  // if (matchedTables.length == 0) {
-  //   console.log("shortedTables", shortedTables);
-  //   // Todo --> mearge multiple tables and to fulfill the requirement of the larger party and even after merging the tables if requerment not meets send a message that the
-  // }
-
   const tableGroups = groupBy(filteredTablesByLock, ({ location }) => location);
   const tableGroupsArray = Object.entries(tableGroups).map(
     ([location, tables]) => ({
@@ -306,7 +299,6 @@ export const selectDineLocationService = async ({
       tables,
     })
   );
-  // console.log("tableGroupsArray", tableGroupsArray);
   return tableGroupsArray;
 };
 

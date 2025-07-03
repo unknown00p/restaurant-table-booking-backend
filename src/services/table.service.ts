@@ -64,20 +64,6 @@ export const addTablesToRestaurantService = async ({ data, restaurantId }) => {
     );
   }
 
-  // let tableCount = restaurant.numberOfTables;
-
-  // if (!tableCount) {
-  //   await Restaurant.findByIdAndUpdate(restaurantId, {
-  //     numberOfTables: data.length,
-  //   });
-  // } else {
-  // const mergedTableCount = (tableCount += data.length);
-
-  // await Restaurant.findByIdAndUpdate(restaurantId, {
-  //   numberOfTables: mergedTableCount,
-  // });
-  // }
-
   await Restaurant.findByIdAndUpdate(restaurantId, {
     $inc: { numberOfTables: data.length },
   });

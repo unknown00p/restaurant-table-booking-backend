@@ -76,19 +76,20 @@ export const searchWithAvailabilityService = async ({
   // calculate reservationEnd for bookings
   const getBookingDuration = (guests: number) => {
     if (guests <= 2) return 60;
-    if (guests <= 4) return 90;
-    if (guests <= 8) return 120;
-    return 150;
+    if (guests <= 4) return 120;
+    if (guests <= 8) return 160;
+    return 180;
   };
 
   const timeSlots = genrateNearbySlots(convertedTime, convertedDate);
+  let timeToStay: number;
 
   const restaurants = await Promise.all(
     opendRestaurant.map(async (data) => {
       // find booking that is matched between reservation start and end
       const availableSlots = [];
       for (const timeSlot of timeSlots) {
-        const timeToStay = getBookingDuration(Number(people));
+        timeToStay = getBookingDuration(Number(people));
         const reservationEnd = addMinutesToTime(timeSlot, timeToStay);
 
         const reservationStartDateTime = combineDateAndTime(
@@ -172,9 +173,6 @@ export const searchWithAvailabilityService = async ({
             );
           }
         }
-        console.log(matchedTables.length)
-        console.log(timeSlot)
-        console.log(matchedTables)
 
         if (matchedTables.length > 0) {
           availableSlots.push({
@@ -203,7 +201,7 @@ export const searchWithAvailabilityService = async ({
           time: slots.time,
           availableTableId: slots.tables.map((table) => table._id),
         })),
-        cuisines: data.cuisines,
+        mainCuisine: data.mainCuisine,
         location: data.location,
         openTime: data.openTime,
         closeTime: data.closeTime,
@@ -211,6 +209,7 @@ export const searchWithAvailabilityService = async ({
           totalRatings: rating.totalRatings,
           averageRating: rating.averageRating,
         })),
+        diningDuration: timeToStay,
       };
     })
   );
@@ -222,75 +221,69 @@ export const addRestaurantService = async ({
   name,
   city,
   area,
-  cuisines,
+  subCuisines,
   numberOfTables,
   openTime,
   closeTime,
   mainImage,
   subImages,
   minimumDeposite,
-  price,
-  policies
+  policies,
+  contactNo,
+  mainCuisine,
+  description,
+  dressCode,
+  executiveChef,
+  expenseType,
+  paymentOptions,
 }: restaurantInputType) => {
-
   if (
-    (typeof name !== "string" ||
-      typeof city !== "string" ||
-      typeof area !== "string" ||
-      !Array.isArray(cuisines) ||
-      typeof numberOfTables !== "number" ||
-      typeof openTime !== "string" ||
-      typeof closeTime !== "string" ||
-      typeof minimumDeposite !== "number" ||
-      typeof price !== "number" ||
-      !Array.isArray(policies)
-  )
+    typeof name !== "string" ||
+    typeof city !== "string" ||
+    typeof area !== "string" ||
+    typeof numberOfTables !== "number" ||
+    typeof openTime !== "string" ||
+    typeof closeTime !== "string" ||
+    typeof minimumDeposite !== "number" ||
+    typeof contactNo !== "string" ||
+    !Array.isArray(policies) ||
+    typeof description !== "string" ||
+    typeof executiveChef !== "string" ||
+    !mainCuisine ||
+    typeof mainCuisine.name !== "string" ||
+    !Array.isArray(mainCuisine.menu) ||
+    !Array.isArray(subCuisines) ||
+    !Array.isArray(paymentOptions)
   ) {
-    throw new ApiError(404, "all feilds are required");
+    throw new ApiError(400, "All required fields must be provided correctly");
   }
 
   const mainImageRes = await uploadToImageKit(mainImage);
-
-  const subImagesUrl = [];
   const subImagesRes = await uploadToImageKit(subImages);
-  subImagesRes.map((img) => {
-    subImagesUrl.push(img.url);
+  const subImagesUrl = subImagesRes.map((img) => img.url);
+
+  const restaurant = await Restaurant.findOne({
+    name: name.trim().toLowerCase(),
   });
-
-  const restaurant = await Restaurant.findOne({ name });
-
-  if (restaurant && restaurant.location.area == area) {
+  if (restaurant && restaurant.location.area === area.trim().toLowerCase()) {
     throw new ApiError(
       400,
-      "restaurant with same name and location already exists"
+      "Restaurant with same name and location already exists"
     );
   }
-
-  // commented for now because middlerware not applied
-  // const user = req.user;
-  // if (user.role !== "admin") {
-  //   throw new ApiError(
-  //     401,
-  //     "user does not have permission to add restaurant"
-  //   );
-  // }
 
   let formattedOpenTime = openTime;
   let formattedCloseTime = closeTime;
 
   if (!isValidTime(openTime)) {
     const converted = convertTo24Hour(openTime);
-    if (!converted) {
-      throw new ApiError(400, "Invalid openTime format");
-    }
+    if (!converted) throw new ApiError(400, "Invalid openTime format");
     formattedOpenTime = converted;
   }
 
   if (!isValidTime(closeTime)) {
     const converted = convertTo24Hour(closeTime);
-    if (!converted) {
-      throw new ApiError(400, "Invalid closeTime format");
-    }
+    if (!converted) throw new ApiError(400, "Invalid closeTime format");
     formattedCloseTime = converted;
   }
 
@@ -300,23 +293,31 @@ export const addRestaurantService = async ({
       city: city.trim().toLowerCase(),
       area: area.trim().toLowerCase(),
     },
-    cuisines: cuisines.map((cuisine) => cuisine.trim().toLowerCase()),
+    mainCuisine: {
+      name: mainCuisine.name.trim(),
+      menu: mainCuisine.menu.map((item) => item.trim()),
+    },
+    subCuisines: subCuisines.map((sub) => ({
+      name: sub.name.trim(),
+      menu: sub.menu.map((item) => item.trim()),
+    })),
+    expenseType,
+    executiveChef,
+    paymentOptions,
+    dressCode,
     numberOfTables,
     openTime: formattedOpenTime,
     closeTime: formattedCloseTime,
     mainImage: mainImageRes[0].url,
     subImages: subImagesUrl,
     policies,
-    perPersonPrice:{
-      price: Number(price),
-      minimumDeposite: Number(minimumDeposite)
-    }
+    minimumDeposite,
+    contactNo,
+    description,
   });
-
   if (!addedRestaurant) {
-    throw new ApiError(500, "got error while adding restaurant");
+    throw new ApiError(500, "Error while adding restaurant");
   }
-
   return addedRestaurant;
 };
 

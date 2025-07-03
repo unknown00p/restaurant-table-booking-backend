@@ -25,9 +25,42 @@ const RestaurantSchema = new mongoose.Schema(
       },
     },
 
-    cuisines: {
-      type: [String],
+    mainCuisine: {
+      name: { type: String, required: true },
+      menu: { type: [String], required: true },
+    },
+    subCuisines: [
+      {
+        name: { type: String, required: true },
+        menu: { type: [String], required: true },
+      },
+    ],
+
+    expenseType: {
+      type: String,
+      enum: ["Low", "Medium", "High", "Expensive"],
       required: true,
+    },
+
+    executiveChef:{
+      type: String,
+      required:true
+    },
+
+    paymentOptions:{
+      type: [String],
+      required:true
+    },
+
+    dressCode: {
+      type: String,
+      enum: [
+        "Casual",
+        "Smart Casual",
+        "Business Casual",
+        "Formal",
+      ],
+      default: "Casual",
     },
 
     numberOfTables: {
@@ -53,15 +86,18 @@ const RestaurantSchema = new mongoose.Schema(
       required: true,
     },
 
-    perPersonPrice: {
-      price: {
-        type: Number,
-        required: true,
-      },
-      minimumDeposite: {
-        type: Number,
-        required: true,
-      },
+    minimumDeposite: {
+      type: Number,
+    },
+
+    contactNo: {
+      type: String,
+      required: true,
+    },
+    description: {
+      type: String,
+      required: true,
+      maxlength: 150,
     },
   },
   {

@@ -19,24 +19,25 @@ export const addRestaurant = asyncHandler(
   async (req: Request, res: Response) => {
     const {
       name,
-      cuisines,
+      mainCuisine,
+      subCuisines,
+      expenseType,
+      executiveChef,
+      paymentOptions,
+      dressCode,
       numberOfTables,
       openTime,
       closeTime,
       policies,
+      minimumDeposite,
+      contactNo,
+      description,
       "location.city": city,
       "location.area": area,
-      "perPersonPrice.price": price,
-      "perPersonPrice.minimumDeposite": minimumDeposite,
     } = req.body;
 
     const { mainImage, subImages } = req.files as {
       [fieldname: string]: Express.Multer.File[];
-    };
-
-    const location = {
-      city,
-      area,
     };
 
     const numberOfTablesConverted = Number(numberOfTables);
@@ -45,15 +46,21 @@ export const addRestaurant = asyncHandler(
       name,
       city,
       area,
-      cuisines,
+      mainCuisine,
+      subCuisines,
+      expenseType,
+      executiveChef,
+      paymentOptions,
+      dressCode,
+      description,
       numberOfTables: numberOfTablesConverted,
       openTime,
       closeTime,
       mainImage,
       subImages,
-      price: Number(price),
       minimumDeposite: Number(minimumDeposite),
       policies,
+      contactNo,
     });
 
     res

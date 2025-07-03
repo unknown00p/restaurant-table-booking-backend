@@ -7,15 +7,27 @@ export type searchInputTypes = {
 
 export type restaurantInputType = {
   name?: string;
-  city?: string;
-  area?: string;
-  cuisines?: [string];
+  city: string;
+  area: string;
+  mainCuisine?: {
+    name: string;
+    menu: string[];
+  };
+  subCuisines?: {
+    name: string;
+    menu: string[];
+  }[];
+  expenseType?: "Low" | "Medium" | "High" | "Expensive";
+  executiveChef?: string;
+  paymentOptions?: string[];
+  dressCode?: "Casual" | "Smart Casual" | "Business Casual" | "Formal";
   numberOfTables?: number;
   openTime?: string;
   closeTime?: string;
   mainImage: Express.Multer.File[] | { [fieldname: string]: File[] };
   subImages: Express.Multer.File[] | { [fieldname: string]: File[] };
   minimumDeposite: number;
-  price: number;
-  policies: [string];
+  policies: string[];
+  contactNo: string;
+  description: string;
 };
