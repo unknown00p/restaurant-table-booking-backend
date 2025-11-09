@@ -6,112 +6,6 @@ import { generateOTP } from "../utils/otpGenrator";
 import jwt from "jsonwebtoken";
 import type { CookieOptions } from "express";
 
-// export const signInService = async ({
-//   email,
-//   password,
-// }: {
-//   email: string;
-//   password: string;
-// }) => {
-//   if (!email || !password) {
-//     throw new ApiError(404, "all fields are required");
-//   }
-//   const user = await User.findOne({ email });
-
-//   if (!user) {
-//     throw new ApiError(404, "user does not exists");
-//   }
-
-//   if (!user.emailVerified) {
-//     throw new ApiError(400, "user is unAuthorized please authorize first");
-//   }
-
-//   const checkPassValid = await user.isPasswordCorrect(password);
-//   console.log(checkPassValid);
-
-//   if (!checkPassValid) {
-//     throw new ApiError(400, "password is incorrect");
-//   }
-
-//   const refreshToken = await user.generateRefreshToken();
-//   const accessToken = await user.generateAccessToken();
-
-//   const loggedInUser = await User.findById(user?._id).select("-password");
-
-//   const cookieOption = {
-//     secure: true,
-//     httpOnly: true,
-//   };
-
-//   return {
-//     refreshToken,
-//     accessToken,
-//     loggedInUser,
-//     cookieOption,
-//   };
-// };
-
-// export const signUpService = async ({
-//   email,
-//   password,
-// }: {
-//   email: string;
-//   password: string;
-// }) => {
-//   // check if any of the fields is missing
-//   if (!email || !password) {
-//     throw new ApiError(400, "all fields are required");
-//   }
-
-//   // check if the user already exists in database
-//   const isUser = await User.findOne({ email });
-
-//   // if user exists and user is authorized then throw an error
-//   if (isUser?.emailVerified) {
-//     throw new ApiError(403, "user already exists");
-//   }
-
-//   // create user if user does not exists
-//   let user = isUser;
-//   if (!isUser) {
-//     user = await User.create({
-//       email,
-//       password,
-//       emailVerified: false,
-//     });
-
-//     if (!user) {
-//       throw new ApiError(405, "got error while creating user in database");
-//     }
-//   }
-
-//   // genrate OTP for user varification
-//   const otp = generateOTP();
-//   // console.log(otp)
-//   await emailSender(email, otp)
-//     .then(() => console.log("OTP sent successfully!"))
-//     .catch((err) => console.error("Error sending email:", err));
-
-//   if (!user || !user._id) {
-//     throw new ApiError(400, "User not found or invalid");
-//   }
-
-//   // check if otp already exists and delete it
-//   await Otp.findOneAndDelete({ userId: user?._id });
-
-//   // add otp to database
-//   const createOtp = await Otp.create({
-//     userId: user?._id,
-//     otpCode: otp,
-//   });
-
-//   if (!createOtp) {
-//     throw new ApiError(405, "got error while creating otp in database");
-//   }
-
-//   return user;
-// };
-
 // export const signInAndsignUpService = async ({
 //   email,
 //   password,
@@ -147,93 +41,205 @@ import type { CookieOptions } from "express";
 //   };
 // };
 
-export const signInAndsignUpService = async ({
+// export const signInAndsignUpService = async ({
+//   email,
+//   password
+// }: {
+//   email: string;
+//   password: string;
+// }) => {
+//   if (!email || !password) {
+//     throw new ApiError(400, "all fields are required");
+//   }
+//   const isUser = await User.findOne({ email });
+
+//   let user = isUser;
+//   if (!isUser) {
+//     user = await User.create({
+//       email,
+//       password,
+//       emailVerified: false
+//     });
+
+//     if (!user) {
+//       throw new ApiError(405, "got error while creating user in database");
+//     }
+//     // genrate OTP for user varification
+//     const otp = generateOTP();
+//     // console.log(otp)
+//     await emailSender(email, otp)
+//       .then(() => console.log("OTP sent successfully!"))
+//       .catch((err) => console.error("Error sending email:", err));
+
+//     if (!user || !user._id) {
+//       throw new ApiError(400, "User not found or invalid");
+//     }
+
+//     // check if otp already exists and delete it
+//     await Otp.findOneAndDelete({ email });
+
+//     // add otp to database
+//     const createOtp = await Otp.create({
+//       userId: user?._id,
+//       otpCode: otp,
+//     });
+
+//     if (!createOtp) {
+//       throw new ApiError(405, "got error while creating otp in database");
+//     }
+
+//     return {
+//       type: "signup",
+//       user: user,
+//     };
+//   }
+
+//   if (isUser && !isUser.emailVerified) {
+//     const res = await resendOtpService({userId: isUser?._id})
+
+//     return {
+//       type: "verify",
+//       message: res.message,
+//       user: isUser,
+//     };
+//   } else {
+//     const checkPassValid = await user.isPasswordCorrect(password);
+
+//     if (!checkPassValid) {
+//       throw new ApiError(400, "password is incorrect");
+//     }
+
+//     const refreshToken = await user.generateRefreshToken();
+//     const accessToken = await user.generateAccessToken();
+
+//     const loggedInUser = await User.findById(user?._id).select("-password");
+
+//     const cookieOption: CookieOptions = {
+//       httpOnly: true,
+//       secure: process.env.NODE_ENV == "development" ? true : false,
+//       sameSite: process.env.NODE_ENV === "development" ? "none" : "lax",
+//     };
+
+//     return {
+//       type: "signin",
+//       user: loggedInUser,
+//       refreshToken,
+//       accessToken,
+//       cookieOption,
+//     };
+//   }
+// };
+
+export const signInService = async ({
   email,
-  password
+  password,
 }: {
   email: string;
   password: string;
 }) => {
   if (!email || !password) {
+    throw new ApiError(404, "all fields are required");
+  }
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    throw new ApiError(404, "user does not exists");
+  }
+
+  if (!user.emailVerified) {
+    throw new ApiError(400, "user is unAuthorized please authorize first");
+  }
+
+  const checkPassValid = await user.isPasswordCorrect(password);
+  console.log(checkPassValid);
+
+  if (!checkPassValid) {
+    throw new ApiError(400, "password is incorrect");
+  }
+
+  const refreshToken = await user.generateRefreshToken();
+  const accessToken = await user.generateAccessToken();
+
+  const loggedInUser = await User.findById(user?._id).select("-password");
+
+  const cookieOption = {
+    secure: true,
+    httpOnly: true,
+  };
+
+  return {
+    refreshToken,
+    accessToken,
+    loggedInUser,
+    cookieOption,
+  };
+};
+
+export const signUpService = async ({
+  email,
+  password,
+  confirmPassword,
+}: {
+  email: string;
+  password: string;
+  confirmPassword: string;
+}) => {
+  // check if any of the fields is missing
+  if (!email || !password) {
     throw new ApiError(400, "all fields are required");
   }
+
+  // check if the user already exists in database
   const isUser = await User.findOne({ email });
 
+  // if user exists and user is authorized then throw an error
+  if (isUser?.emailVerified) {
+    throw new ApiError(403, "user already exists");
+  }
+
+  if (password !== confirmPassword) {
+    throw new ApiError(400, "password and confirm password do not match");
+  }
+
+  // create user if user does not exists
   let user = isUser;
   if (!isUser) {
     user = await User.create({
       email,
       password,
-      emailVerified: false
+      emailVerified: false,
     });
 
     if (!user) {
       throw new ApiError(405, "got error while creating user in database");
     }
-    // genrate OTP for user varification
-    const otp = generateOTP();
-    // console.log(otp)
-    await emailSender(email, otp)
-      .then(() => console.log("OTP sent successfully!"))
-      .catch((err) => console.error("Error sending email:", err));
-
-    if (!user || !user._id) {
-      throw new ApiError(400, "User not found or invalid");
-    }
-
-    // check if otp already exists and delete it
-    await Otp.findOneAndDelete({ email });
-
-    // add otp to database
-    const createOtp = await Otp.create({
-      userId: user?._id,
-      otpCode: otp,
-    });
-
-    if (!createOtp) {
-      throw new ApiError(405, "got error while creating otp in database");
-    }
-
-    return {
-      type: "signup",
-      user: user,
-    };
   }
 
-  if (isUser && !isUser.emailVerified) {
-    const res = await resendOtpService({userId: isUser?._id})
+  // genrate OTP for user varification
+  const otp = generateOTP();
+  // console.log(otp)
+  await emailSender(email, otp)
+    .then(() => console.log("OTP sent successfully!"))
+    .catch((err) => console.error("Error sending email:", err));
 
-    return {
-      type: "verify",
-      message: res.message,
-      user: isUser,
-    };
-  } else {
-    const checkPassValid = await user.isPasswordCorrect(password);
-
-    if (!checkPassValid) {
-      throw new ApiError(400, "password is incorrect");
-    }
-
-    const refreshToken = await user.generateRefreshToken();
-    const accessToken = await user.generateAccessToken();
-
-    const loggedInUser = await User.findById(user?._id).select("-password");
-
-    const cookieOption: CookieOptions = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV == "development" ? true : false,
-      sameSite: process.env.NODE_ENV === "development" ? "none" : "lax",
-    };
-
-    return {
-      type: "signin",
-      user: loggedInUser,
-      refreshToken,
-      accessToken,
-      cookieOption,
-    };
+  if (!user || !user._id) {
+    throw new ApiError(400, "User not found or invalid");
   }
+
+  // check if otp already exists and delete it
+  await Otp.findOneAndDelete({ userId: user?._id });
+
+  // add otp to database
+  const createOtp = await Otp.create({
+    userId: user?._id,
+    otpCode: otp,
+  });
+
+  if (!createOtp) {
+    throw new ApiError(405, "got error while creating otp in database");
+  }
+
+  return user;
 };
 
 export const signOutService = async (userId) => {

@@ -1,13 +1,13 @@
 import { Router } from "express";
 import {
-  // signIn,
-  // signUp,
+  signIn,
+  signUp,
   signOut,
   otpConfirmation,
   refreshAccessToken,
   authCheck,
   resendOtp,
-  signInAndSignUp,
+  // signInAndSignUp,
   getCurrnentUser,
   getUserById,
 } from "../controller/auth.controller";
@@ -16,9 +16,9 @@ import { verifyUser } from "../middleware/user.middleware";
 const authRouter = Router();
 
 authRouter.route("/").get(authCheck);
-// authRouter.route("/login").post(signIn);
-// authRouter.route("/register").post(signUp);
-authRouter.route("/signInAndSignUp").post(signInAndSignUp);
+authRouter.route("/login").post(signIn);
+authRouter.route("/register").post(signUp);
+// authRouter.route("/signInAndSignUp").post(signInAndSignUp);
 authRouter.route("/logout").post(verifyUser, signOut);
 authRouter.route("/otpConfirmation").post(otpConfirmation);
 authRouter.route("/refreshAccessToken").post(refreshAccessToken);

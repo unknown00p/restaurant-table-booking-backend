@@ -8,71 +8,78 @@ import {
   otpConfirmationService,
   refreshAccessTokenService,
   resendOtpService,
-  signInAndsignUpService,
+  // signInAndsignUpService,
   getCurrnentUserService,
+  signInService,
+  signUpService,
 } from "../services/auth.service";
 
 export const authCheck = asyncHandler(async (req: Request, res: Response) => {
   return res.status(200).json(new ApiResponse(200, "welcome to auth"));
 });
 
-// export const signIn = asyncHandler(async (req: Request, res: Response) => {
-//   const { email, password } = req.body;
+export const signIn = asyncHandler(async (req: Request, res: Response) => {
+  const { email, password } = req.body;
 
-//   const { refreshToken, accessToken, loggedInUser, cookieOption } =
-//     await signInService({ email, password });
+  const { refreshToken, accessToken, loggedInUser, cookieOption } =
+    await signInService({ email, password });
 
-//   return res
-//     .status(200)
-//     .cookie("refreshToken", refreshToken, cookieOption)
-//     .cookie("accessToken", accessToken, cookieOption)
-//     .json(
-//       new ApiResponse(200, "user logged in sucessfully", {
-//         loggedInUser,
-//         refreshToken,
-//         accessToken,
-//       })
-//     );
-// });
+  return res
+    .status(200)
+    .cookie("refreshToken", refreshToken, cookieOption)
+    .cookie("accessToken", accessToken, cookieOption)
+    .json(
+      new ApiResponse(200, "user logged in sucessfully", {
+        loggedInUser,
+        refreshToken,
+        accessToken,
+      })
+    );
+});
 
-// export const signUp = asyncHandler(async (req: Request, res: Response) => {
-//   // get all the fields for sign up
-//   const { email, password } = req.body;
-//   const user = signUpService({ email, password });
+export const signUp = asyncHandler(async (req: Request, res: Response) => {
+  // get all the fields for sign up
+  const { email, password, confirmPassword } = req.body;
+  const user = await signUpService({
+    email,
+    password,
+    confirmPassword,
+  });
 
-//   return res
-//     .status(200)
-//     .json(new ApiResponse(200, "user Signed up sucessfully", user));
-// });
-export const signInAndSignUp = asyncHandler(
-  async (req: Request, res: Response) => {
-    const { email, password } = req.body;
-    const userData = await signInAndsignUpService({ email, password });
+  return res
+    .status(200)
+    .json(new ApiResponse(200, "user Signed up sucessfully", user));
+});
 
-    if (userData.type == "signin") {
-      const { type, user, accessToken, refreshToken, cookieOption } = userData;
-      return res
-        .status(200)
-        .cookie("refreshToken", refreshToken, cookieOption)
-        .cookie("accessToken", accessToken, cookieOption)
-        .json(
-          new ApiResponse(200, `user logged in sucessfully`, { user, type })
-        );
-    }
+// export const signInAndSignUp = asyncHandler(
+//   async (req: Request, res: Response) => {
+//     const { email, password } = req.body;
+//     const userData = await signInAndsignUpService({ email, password });
 
-    const { type, user } = userData;
+//     if (userData.type == "signin") {
+//       const { type, user, accessToken, refreshToken, cookieOption } = userData;
+//       return res
+//         .status(200)
+//         .cookie("refreshToken", refreshToken, cookieOption)
+//         .cookie("accessToken", accessToken, cookieOption)
+//         .json(
+//           new ApiResponse(200, `user logged in sucessfully`, { user, type })
+//         );
+//     }
 
-    return res
-      .status(200)
-      .json(new ApiResponse(200, `user signed up sucessfully`, { user, type }));
-  }
-);
+//     const { type, user } = userData;
+
+//     return res
+//       .status(200)
+//       .json(new ApiResponse(200, `user signed up sucessfully`, { user, type }));
+//   }
+// );
 
 export const signOut = asyncHandler(
   async (req: authorizedUser, res: Response) => {
     // yet to write
     const userId = req?.user._id;
-    const cookieOptions = await signOutService(userId);;
+    const cookieOptions = await signOutService(userId);
     return res
       .status(200)
       .clearCookie("accessToken", cookieOptions)
